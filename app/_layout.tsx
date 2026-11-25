@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StatusBar } from 'expo-status-bar';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useAuth } from '../lib/auth-store';
 
 const qc = new QueryClient();
@@ -25,15 +26,17 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 
 export default function RootLayout() {
   return (
-    <QueryClientProvider client={qc}>
-      <AuthGuard>
-        <StatusBar style="light" />
-        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#07070C' } }}>
-          <Stack.Screen name="(auth)" />
-          <Stack.Screen name="(tabs)" />
-          <Stack.Screen name="order/[id]" options={{ presentation: 'card' }} />
-        </Stack>
-      </AuthGuard>
-    </QueryClientProvider>
+    <SafeAreaProvider>
+      <QueryClientProvider client={qc}>
+        <AuthGuard>
+          <StatusBar style="light" />
+          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#07070C' } }}>
+            <Stack.Screen name="(auth)" />
+            <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="order/[id]" options={{ presentation: 'card' }} />
+          </Stack>
+        </AuthGuard>
+      </QueryClientProvider>
+    </SafeAreaProvider>
   );
 }

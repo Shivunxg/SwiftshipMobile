@@ -12,7 +12,7 @@ export default function Dashboard() {
   const { data: wallet } = useWallet(userId);
 
   const counts = {
-    new:       orders?.filter(o => o.status === 'PROCESSING').length ?? 0,
+    new:       orders?.filter(o => o.status === 'ORDER_CREATED' || o.status === 'AWAITING_PICKUP').length ?? 0,
     inTransit: orders?.filter(o => o.status === 'IN_TRANSIT').length ?? 0,
     delivered: orders?.filter(o => o.status === 'DELIVERED').length ?? 0,
     ndr:       orders?.filter(o => o.status === 'DELIVERY_FAILED').length ?? 0,
