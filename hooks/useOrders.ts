@@ -80,3 +80,15 @@ export const useAvailableCouriers = (pincode: string, weight: number) =>
       api.get(`/api/couriers/available?pincode=${pincode}&weight=${weight}`).then(r => r.data),
     enabled: pincode.length === 6 && weight > 0,
   });
+
+export const useAssignCourier = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ orderId, courierCode, courierName }: { orderId: number; courierCode: string; courierName: string }) =>
+      api.put(`/api/orders/${orderId}/assign-courier`, { courierCode, courierName }),
+    onSuccess: (_, { orderId }) => {
+      qc.invalidateQueries({ queryKey: ['orders'] });
+      qc.invalidateQueries({ queryKey: ['order', orderId] });
+    },
+  });
+};

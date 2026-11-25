@@ -117,6 +117,17 @@ export default function OrderDetail() {
           </View>
         </View>
 
+        {order.status === 'ORDER_CREATED' && !order.awbNumber && (
+          <View style={s.cta}>
+            <TouchableOpacity
+              style={[s.ctaBtn, { flex: 1, backgroundColor: Colors.accent }]}
+              onPress={() => router.push({ pathname: '/courier-assignment', params: { orderId: String(order.id) } })}
+            >
+              <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>Assign Courier</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {!order.status.startsWith('RTO') && order.status !== 'DELIVERED' && order.status !== 'CANCELLED' && (
           <View style={s.cta}>
             <TouchableOpacity style={[s.ctaBtn, { backgroundColor: Colors.errorDim }]} onPress={initiateRTO}>

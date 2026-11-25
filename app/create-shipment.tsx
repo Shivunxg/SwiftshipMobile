@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, TextInput, TouchableOpacity,
-  ActivityIndicator, Alert, KeyboardAvoidingView, Platform,
+  Alert, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Colors } from '../constants/colors';
-import { useCreateShipment, usePickups } from '../hooks/useOrders';
+import { usePickups } from '../hooks/useOrders';
 import { useAuth } from '../lib/auth-store';
+import { setPendingShipment } from '../lib/pending-shipment';
 
 type Step = 1 | 2 | 3;
 
@@ -70,7 +71,6 @@ export default function CreateShipmentScreen() {
   const router = useRouter();
   const { tenantId } = useAuth();
   const { data: pickups } = usePickups(tenantId);
-  const createMut = useCreateShipment();
   const [step, setStep] = useState<Step>(1);
   const [form, setForm] = useState<FormData>(INIT);
 
@@ -107,33 +107,38 @@ export default function CreateShipmentScreen() {
     setStep(s => (s + 1) as Step);
   };
 
-  const submit = async () => {
-    const body = {
-      receiverName:      form.receiverName.trim(),
-      receiverPhone:     form.receiverPhone.trim(),
-      receiverAddress:   form.receiverAddress.trim(),
-      receiverCity:      form.receiverCity.trim(),
-      receiverState:     form.receiverState.trim(),
-      receiverPincode:   form.receiverPincode.trim(),
-      itemContents:      form.itemContents.trim(),
-      weight:            Number(form.weight),
-      length:            form.length ? Number(form.length) : null,
-      width:             form.width  ? Number(form.width)  : null,
-      height:            form.height ? Number(form.height) : null,
-      orderValue:        Number(form.orderValue),
-      paymentMethod:     form.paymentMethod,
-      codAmount:         form.paymentMethod === 'COD' ? Number(form.codAmount) : null,
-      pickupLocationId:  form.pickupLocationId ? Number(form.pickupLocationId) : null,
-    };
+  const submit = () => {
+    const pickup = pickups?.find(p => String(p.id) === form.pickupLocationId);
+    const fromPincode = pickup?.pincode ?? '';
 
-    try {
-      await createMut.mutateAsync(body);
-      Alert.alert('Shipment Created', 'Your order has been placed successfully.', [
-        { text: 'View Orders', onPress: () => router.replace('/(tabs)/orders') },
-      ]);
-    } catch (e: any) {
-      Alert.alert('Error', e?.response?.data?.message ?? 'Failed to create shipment. Try again.');
-    }
+    setPendingShipment({
+      receiverName:    form.receiverName.trim(),
+      receiverPhone:   form.receiverPhone.trim(),
+      receiverAddress: form.receiverAddress.trim(),
+      receiverCity:    form.receiverCity.trim(),
+      receiverState:   form.receiverState.trim(),
+      receiverPincode: form.receiverPincode.trim(),
+      itemContents:    form.itemContents.trim(),
+      weight:          Number(form.weight),
+      length:          form.length ? Number(form.length) : null,
+      width:           form.width  ? Number(form.width)  : null,
+      height:          form.height ? Number(form.height) : null,
+      orderValue:      Number(form.orderValue),
+      paymentMethod:   form.paymentMethod,
+      codAmount:       form.paymentMethod === 'COD' ? Number(form.codAmount) : null,
+      pickupLocationId: form.pickupLocationId ? Number(form.pickupLocationId) : null,
+      fromPincode,
+    });
+
+    router.replace({
+      pathname: '/courier-assignment',
+      params: {
+        fromPincode,
+        toPincode:     form.receiverPincode.trim(),
+        weight:        form.weight,
+        paymentMethod: form.paymentMethod,
+      },
+    });
   };
 
   const stepLabel = ['Customer Details', 'Package Details', 'Review & Confirm'];
@@ -282,16 +287,8 @@ export default function CreateShipmentScreen() {
               <Text style={s.btnTxt}>Continue  ›</Text>
             </TouchableOpacity>
           ) : (
-            <TouchableOpacity
-              style={[s.btn, createMut.isPending && { opacity: 0.6 }]}
-              onPress={submit}
-              disabled={createMut.isPending}
-              activeOpacity={0.85}
-            >
-              {createMut.isPending
-                ? <ActivityIndicator color="#fff" />
-                : <Text style={s.btnTxt}>Create Shipment</Text>
-              }
+            <TouchableOpacity style={s.btn} onPress={submit} activeOpacity={0.85}>
+              <Text style={s.btnTxt}>Find Couriers  →</Text>
             </TouchableOpacity>
           )}
         </View>
