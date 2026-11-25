@@ -18,7 +18,7 @@ function addDays(iso: string | null | undefined, days: number): Date | null {
 
 function isoDate(d: Date | null): string {
   if (!d) return 'pending';
-  try { return d.toISOString().slice(0, 10); } catch { return 'pending'; }
+  try { return d.toISOString().slice(0, 10); } catch (e) { return 'pending'; }
 }
 
 export default function WalletScreen() {

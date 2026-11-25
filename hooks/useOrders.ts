@@ -36,7 +36,7 @@ export const useNDROrders = () => {
 
 export const useRTOOrders = () => {
   const { data, ...rest } = useOrders();
-  return { data: data?.filter(o => o.status.startsWith('RTO')), ...rest };
+  return { data: data?.filter(o => o.status?.startsWith('RTO') ?? false), ...rest };
 };
 
 export const useInitiateRTO = () => {

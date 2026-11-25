@@ -22,7 +22,7 @@ function matchFilter(o: Order, filter: Filter): boolean {
     case 'OFD':        return o.status === 'OUT_FOR_DELIVERY';
     case 'Delivered':  return o.status === 'DELIVERED';
     case 'NDR':        return o.status === 'DELIVERY_FAILED' || o.status === 'NDR';
-    case 'RTO':        return o.status.startsWith('RTO');
+    case 'RTO':        return o.status?.startsWith('RTO') ?? false;
     case 'COD':        return o.paymentMethod === 'COD';
   }
 }

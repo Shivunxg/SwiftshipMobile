@@ -174,7 +174,7 @@ export default function Dashboard() {
     ofd:       o.filter(x => x.status === 'OUT_FOR_DELIVERY').length,
     delivered: o.filter(x => x.status === 'DELIVERED').length,
     ndr:       o.filter(x => x.status === 'DELIVERY_FAILED' || x.status === 'NDR').length,
-    rto:       o.filter(x => x.status.startsWith('RTO')).length,
+    rto:       o.filter(x => x.status?.startsWith('RTO') ?? false).length,
     total:     o.length,
   };
   const bal          = wallet?.balance ?? walletBalance;

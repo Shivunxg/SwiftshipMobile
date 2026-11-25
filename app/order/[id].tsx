@@ -53,7 +53,7 @@ export default function OrderDetail() {
         </View>
 
         <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10, gap: 10 }}>
-          <Badge label={order.status.replace(/_/g, ' ')} variant={order.status === 'DELIVERED' ? 'success' : order.status.includes('FAILED') ? 'error' : 'accent'} />
+          <Badge label={(order.status ?? '').replace(/_/g, ' ')} variant={order.status === 'DELIVERED' ? 'success' : order.status?.includes('FAILED') ? 'error' : 'accent'} />
           {order.awbNumber ? <Text style={{ fontSize: 11, color: Colors.fg2 }}>AWB: {order.awbNumber}</Text> : null}
         </View>
 
@@ -128,7 +128,7 @@ export default function OrderDetail() {
           </View>
         )}
 
-        {!order.status.startsWith('RTO') && order.status !== 'DELIVERED' && order.status !== 'CANCELLED' && (
+        {!(order.status?.startsWith('RTO') ?? false) && order.status !== 'DELIVERED' && order.status !== 'CANCELLED' && (
           <View style={s.cta}>
             <TouchableOpacity style={[s.ctaBtn, { backgroundColor: Colors.errorDim }]} onPress={initiateRTO}>
               <Text style={{ color: Colors.error, fontWeight: '700', fontSize: 13 }}>Initiate RTO</Text>

@@ -24,7 +24,7 @@ function BusinessTab() {
   const inTransit  = o.filter(x => x.status === 'IN_TRANSIT' || x.status === 'PICKED_UP').length;
   const ofd        = o.filter(x => x.status === 'OUT_FOR_DELIVERY').length;
   const ndr        = o.filter(x => x.status === 'DELIVERY_FAILED' || x.status === 'NDR').length;
-  const rto        = o.filter(x => x.status.startsWith('RTO')).length;
+  const rto        = o.filter(x => x.status?.startsWith('RTO') ?? false).length;
   const cod        = o.filter(x => x.paymentMethod === 'COD').length;
   const prepaid    = o.filter(x => x.paymentMethod === 'ONLINE').length;
   const ndrResolved = o.filter(x => x.status === 'DELIVERED' && (x.ndrDate != null)).length;
@@ -242,7 +242,7 @@ function RTOList() {
               <Text style={s.prodName}>{o.orderNumber}</Text>
               <Text style={s.meta}>{o.receiverName} · {o.receiverCity}</Text>
             </View>
-            <Badge label={o.status.replace('RTO_', 'RTO ')} variant="error" />
+            <Badge label={(o.status ?? '').replace('RTO_', 'RTO ')} variant="error" />
           </View>
           <View style={s.amtRow}>
             <View>
