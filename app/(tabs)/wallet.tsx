@@ -8,14 +8,17 @@ import { useWallet, usePayouts, useOrders, useReleasePayoutMutation } from '../.
 import { useAuth } from '../../lib/auth-store';
 import type { Payout } from '../../lib/types';
 
-function addDays(iso: string, days: number): Date {
+function addDays(iso: string | null | undefined, days: number): Date | null {
+  if (!iso) return null;
   const d = new Date(iso);
+  if (isNaN(d.getTime())) return null;
   d.setDate(d.getDate() + days);
   return d;
 }
 
-function isoDate(d: Date): string {
-  return d.toISOString().slice(0, 10);
+function isoDate(d: Date | null): string {
+  if (!d) return 'pending';
+  try { return d.toISOString().slice(0, 10); } catch { return 'pending'; }
 }
 
 export default function WalletScreen() {
@@ -91,7 +94,7 @@ export default function WalletScreen() {
           <>
             <Text style={s.sectionLbl}>Transactions</Text>
             <View style={s.card}>
-              {wallet!.transactions!.map(t => (
+              {(wallet?.transactions ?? []).map(t => (
                 <View key={t.id} style={s.txRow}>
                   <View style={[s.txIco, { backgroundColor: t.type === 'CREDIT' ? Colors.successDim : Colors.errorDim }]}>
                     <Text style={{ fontSize: 14, fontWeight: '700', color: t.type === 'CREDIT' ? Colors.success : Colors.error }}>
@@ -120,7 +123,7 @@ export default function WalletScreen() {
           </View>
         ) : (
           payoutGroups.map(([isoKey, group]) => {
-            const remDate = new Date(isoKey);
+            const remDate = isoKey !== 'pending' ? new Date(isoKey) : null;
             const groupTotal = group.reduce((sum, p) => sum + p.amount, 0);
             return (
               <View key={isoKey} style={s.groupWrap}>
@@ -128,7 +131,7 @@ export default function WalletScreen() {
                 <View style={s.groupHeader}>
                   <View style={s.groupHeaderLeft}>
                     <Text style={s.groupDateLbl}>Expected Remittance</Text>
-                    <Text style={s.groupDate}>{fmtDate(remDate)}</Text>
+                    <Text style={s.groupDate}>{remDate ? fmtDate(remDate) : 'Pending'}</Text>
                   </View>
                   <View style={s.groupHeaderRight}>
                     <Text style={s.groupTotal}>₹{fmtINR(groupTotal)}</Text>
