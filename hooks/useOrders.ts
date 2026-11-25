@@ -81,6 +81,12 @@ export const useAvailableCouriers = (pincode: string, weight: number) =>
     enabled: pincode.length === 6 && weight > 0,
   });
 
+export const useChangePassword = () =>
+  useMutation({
+    mutationFn: (body: { currentPassword: string; newPassword: string }) =>
+      api.post('/api/auth/change-password', body),
+  });
+
 export const useAssignCourier = () => {
   const qc = useQueryClient();
   return useMutation({

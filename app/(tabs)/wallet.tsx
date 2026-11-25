@@ -25,7 +25,7 @@ export default function WalletScreen() {
           <Text style={s.walletBal}>₹{(wallet?.balance ?? 0).toLocaleString('en-IN')}</Text>
           <View style={s.walletStats}>
             <View style={s.wStat}><Text style={s.wStatN}>₹{(wallet?.creditLimit ?? 0).toLocaleString('en-IN')}</Text><Text style={s.wStatL}>Credit Limit</Text></View>
-            <View style={s.wStat}><Text style={s.wStatN}>{payouts?.length ?? 0}</Text><Text style={s.wStatL}>Pending Payouts</Text></View>
+            <View style={s.wStat}><Text style={s.wStatN}>₹{((payouts ?? []).reduce((sum, p) => sum + p.amount, 0)).toLocaleString('en-IN')}</Text><Text style={s.wStatL}>Pending Payouts</Text></View>
           </View>
         </View>
 

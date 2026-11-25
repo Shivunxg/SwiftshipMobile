@@ -3,28 +3,26 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityInd
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Colors } from '../../constants/colors';
-import { api } from '../../lib/api';
+import { useChangePassword } from '../../hooks/useOrders';
 
 export default function ChangePassword() {
   const router = useRouter();
-  const [current, setCurrent]   = useState('');
-  const [next, setNext]         = useState('');
-  const [confirm, setConfirm]   = useState('');
-  const [loading, setLoading]   = useState(false);
+  const [current, setCurrent] = useState('');
+  const [next, setNext]       = useState('');
+  const [confirm, setConfirm] = useState('');
+  const changePwd = useChangePassword();
 
-  const submit = async () => {
+  const submit = () => {
     if (!current || !next || !confirm) { Alert.alert('Error', 'All fields are required'); return; }
     if (next.length < 8)               { Alert.alert('Error', 'New password must be at least 8 characters'); return; }
     if (next !== confirm)              { Alert.alert('Error', 'Passwords do not match'); return; }
-    setLoading(true);
-    try {
-      await api.post('/api/auth/change-password', { currentPassword: current, newPassword: next });
-      Alert.alert('Success', 'Password changed successfully', [{ text: 'OK', onPress: () => router.back() }]);
-    } catch {
-      Alert.alert('Error', 'Current password is incorrect or request failed');
-    } finally {
-      setLoading(false);
-    }
+    changePwd.mutate(
+      { currentPassword: current, newPassword: next },
+      {
+        onSuccess: () => Alert.alert('Success', 'Password changed successfully', [{ text: 'OK', onPress: () => router.back() }]),
+        onError: () => Alert.alert('Error', 'Current password is incorrect or request failed'),
+      },
+    );
   };
 
   return (
@@ -46,8 +44,8 @@ export default function ChangePassword() {
             ))}
           </View>
 
-          <TouchableOpacity style={s.btn} onPress={submit} disabled={loading}>
-            {loading ? <ActivityIndicator color="#fff" /> : <Text style={s.btnTxt}>Update Password</Text>}
+          <TouchableOpacity style={s.btn} onPress={submit} disabled={changePwd.isPending}>
+            {changePwd.isPending ? <ActivityIndicator color="#fff" /> : <Text style={s.btnTxt}>Update Password</Text>}
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
