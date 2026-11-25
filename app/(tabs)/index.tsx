@@ -25,7 +25,7 @@ export default function Dashboard() {
 
   return (
     <SafeAreaView style={s.safe}>
-      <ScrollView refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={Colors.accent} />}>
+      <ScrollView refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => { refetch(); }} tintColor={Colors.accent} />}>
         <View style={s.header}>
           <View><Text style={s.welcome}>Welcome back</Text><Text style={s.name}>Hello, {name} ▾</Text></View>
           <View style={s.av}><Text style={s.avTxt}>{name[0]?.toUpperCase()}</Text></View>
