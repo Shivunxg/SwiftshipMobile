@@ -256,7 +256,7 @@ export default function ManageCouriersScreen() {
           data={filtered}
           keyExtractor={c => String(c.id)}
           renderItem={({ item }) => <CourierRow courier={item} onToggle={handleToggle} />}
-          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} tintColor={Colors.accent} />}
+          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => { refetch(); }} tintColor={Colors.accent} />}
           contentContainerStyle={filtered.length === 0 ? { flex: 1 } : { paddingBottom: 32 }}
           ItemSeparatorComponent={() => <View style={s.sep} />}
           ListEmptyComponent={
@@ -271,7 +271,7 @@ export default function ManageCouriersScreen() {
           ListHeaderComponent={
             filtered.length > 0 ? (
               <Text style={s.listCount}>{filtered.length} courier{filtered.length !== 1 ? 's' : ''}</Text>
-            ) : null
+            ) : undefined
           }
         />
       )}
