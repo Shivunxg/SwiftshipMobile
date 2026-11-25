@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import {
-  View, Text, FlatList, StyleSheet, ActivityIndicator,
+  View, Text, FlatList, ScrollView, StyleSheet, ActivityIndicator,
   TouchableOpacity, TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -101,18 +101,18 @@ export default function OrdersScreen() {
       </View>
 
       {/* Filter chips */}
-      <FlatList
+      <ScrollView
         horizontal
-        style={{ flexGrow: 0 }}
-        data={FILTERS}
-        keyExtractor={f => f}
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={s.chipScroll}
-        renderItem={({ item: f }) => {
+        style={s.chipBar}
+      >
+        {FILTERS.map(f => {
           const active = filter === f;
           const cnt = counts[f];
           return (
             <TouchableOpacity
+              key={f}
               style={[s.chip, active && s.chipOn]}
               onPress={() => setFilter(f)}
               activeOpacity={0.7}
@@ -125,8 +125,8 @@ export default function OrdersScreen() {
               )}
             </TouchableOpacity>
           );
-        }}
-      />
+        })}
+      </ScrollView>
 
       {/* List */}
       {isLoading ? (
@@ -167,7 +167,8 @@ const s = StyleSheet.create({
   searchIcon:    { fontSize: 14, color: Colors.fg3 },
   searchInput:   { flex: 1, height: 44, fontSize: 13, color: Colors.fg },
   clearBtn:      { fontSize: 13, color: Colors.fg3, fontWeight: '600' },
-  chipScroll:    { paddingHorizontal: 16, gap: 8, paddingBottom: 10 },
+  chipBar:       { flexGrow: 0, flexShrink: 0 },
+  chipScroll:    { paddingHorizontal: 16, gap: 8, paddingBottom: 10, alignItems: 'center' },
   chip:          { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border },
   chipOn:        { backgroundColor: Colors.accent, borderColor: Colors.accent },
   chipTxt:       { fontSize: 12, fontWeight: '600', color: Colors.fg2 },
