@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Colors } from '../constants/colors';
+import { fmtDate } from '../lib/format';
 import { useAuth } from '../lib/auth-store';
 import { api } from '../lib/api';
 
@@ -86,7 +87,7 @@ const CourierRow = React.memo(function CourierRow({
   const brand    = getBrand(courier.code);
   const initials = courier.name.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase() || 'CO';
   const addedStr = courier.addedAt
-    ? new Date(courier.addedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+    ? fmtDate(courier.addedAt)
     : null;
 
   return (

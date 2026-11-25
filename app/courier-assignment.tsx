@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Colors } from '../constants/colors';
+import { fmtDate } from '../lib/format';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth-store';
 import { useOrder } from '../hooks/useOrders';
@@ -99,7 +100,7 @@ function CourierCard({
   const brand    = getBrand(rate.courierCode);
   const initials = rate.courierName.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase() || 'CO';
   const eddStr   = rate.edd
-    ? new Date(rate.edd).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+    ? fmtDate(rate.edd)
     : rate.estimatedDays ? `${rate.estimatedDays} days` : '—';
 
   return (
