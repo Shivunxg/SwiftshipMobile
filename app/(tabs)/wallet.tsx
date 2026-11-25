@@ -55,6 +55,19 @@ export default function WalletScreen() {
           </View>
         ))}
 
+        {/* Upcoming COD Settlement Banner */}
+        <View style={s.settleBanner}>
+          <View style={s.settleLeft}>
+            <Text style={s.settleLblTop}>Upcoming COD Settlement</Text>
+            <Text style={s.settleAmt}>₹{((payouts ?? []).reduce((sum, p) => sum + p.amount, 0)).toLocaleString('en-IN')}</Text>
+            <Text style={s.settleSub}>Next remittance: 2–3 working days after delivery</Text>
+          </View>
+          <View style={s.settleRight}>
+            <Text style={s.settleIcon}>🏦</Text>
+            <View style={s.settleBadge}><Text style={s.settleBadgeTxt}>{(payouts ?? []).length} orders</Text></View>
+          </View>
+        </View>
+
         <Text style={s.sectionLbl}>COD Payouts</Text>
         {payouts?.map(p => (
           <View key={p.id} style={s.txRow}>
@@ -97,5 +110,14 @@ const s = StyleSheet.create({
   txDesc:      { fontSize: 13, fontWeight: '500', color: Colors.fg },
   txDate:      { fontSize: 11, color: Colors.fg2, marginTop: 2 },
   txAmt:       { fontSize: 14, fontWeight: '700' },
-  releaseBtn:  { backgroundColor: Colors.successDim, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
+  releaseBtn:    { backgroundColor: Colors.successDim, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
+  settleBanner:  { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginBottom: 16, backgroundColor: 'rgba(139,92,246,0.14)', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: 'rgba(139,92,246,0.25)' },
+  settleLeft:    { flex: 1 },
+  settleLblTop:  { fontSize: 11, fontWeight: '700', color: Colors.purple, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 6 },
+  settleAmt:     { fontSize: 24, fontWeight: '700', color: Colors.fg, marginBottom: 4 },
+  settleSub:     { fontSize: 11, color: Colors.fg2, lineHeight: 16 },
+  settleRight:   { alignItems: 'center', gap: 8 },
+  settleIcon:    { fontSize: 32 },
+  settleBadge:   { backgroundColor: 'rgba(139,92,246,0.2)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
+  settleBadgeTxt:{ fontSize: 11, fontWeight: '600', color: Colors.purple },
 });
