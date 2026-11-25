@@ -3,6 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert } from 'rea
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Colors } from '../../constants/colors';
+import { fmtINR } from '../../lib/format';
 import { useAuth } from '../../lib/auth-store';
 
 interface RowProps {
@@ -75,7 +76,7 @@ export default function AccountScreen() {
         <TouchableOpacity style={s.balStrip} onPress={() => router.push('/(tabs)/wallet')} activeOpacity={0.85}>
           <View>
             <Text style={s.balLbl}>Wallet Balance</Text>
-            <Text style={s.balVal}>₹{walletBalance.toLocaleString('en-IN')}</Text>
+            <Text style={s.balVal}>₹{fmtINR(walletBalance)}</Text>
           </View>
           <Text style={s.balCta}>View Wallet  ›</Text>
         </TouchableOpacity>

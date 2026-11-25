@@ -10,6 +10,7 @@ import { useOrders, useWallet } from '../../hooks/useOrders';
 import { useAuth } from '../../lib/auth-store';
 import { api } from '../../lib/api';
 import type { OrderStatus } from '../../lib/types';
+import { fmtINR } from '../../lib/format';
 
 const { width: SW } = Dimensions.get('window');
 
@@ -210,7 +211,7 @@ export default function Dashboard() {
         <View style={s.walletCard}>
           <View style={s.walletLeft}>
             <Text style={s.walletLbl}>Wallet Balance</Text>
-            <Text style={s.walletBal}>₹{bal.toLocaleString('en-IN')}</Text>
+            <Text style={s.walletBal}>₹{fmtINR(bal)}</Text>
             <View style={s.rateChip}>
               <Text style={s.rateChipTxt}>{deliveryRate}% delivery rate</Text>
             </View>

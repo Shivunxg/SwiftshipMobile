@@ -3,6 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Colors } from '../../constants/colors';
+import { fmtINR } from '../../lib/format';
 import { useWallet, usePayouts, useReleasePayoutMutation } from '../../hooks/useOrders';
 import { useAuth } from '../../lib/auth-store';
 
@@ -22,10 +23,10 @@ export default function WalletScreen() {
 
         <View style={s.walletHero}>
           <Text style={s.walletLbl}>Available Balance</Text>
-          <Text style={s.walletBal}>₹{(wallet?.balance ?? 0).toLocaleString('en-IN')}</Text>
+          <Text style={s.walletBal}>₹{fmtINR(wallet?.balance)}</Text>
           <View style={s.walletStats}>
-            <View style={s.wStat}><Text style={s.wStatN}>₹{(wallet?.creditLimit ?? 0).toLocaleString('en-IN')}</Text><Text style={s.wStatL}>Credit Limit</Text></View>
-            <View style={s.wStat}><Text style={s.wStatN}>₹{((payouts ?? []).reduce((sum, p) => sum + p.amount, 0)).toLocaleString('en-IN')}</Text><Text style={s.wStatL}>Pending Payouts</Text></View>
+            <View style={s.wStat}><Text style={s.wStatN}>₹{fmtINR(wallet?.creditLimit)}</Text><Text style={s.wStatL}>Credit Limit</Text></View>
+            <View style={s.wStat}><Text style={s.wStatN}>₹{fmtINR((payouts ?? []).reduce((sum, p) => sum + p.amount, 0))}</Text><Text style={s.wStatL}>Pending Payouts</Text></View>
           </View>
         </View>
 
@@ -44,7 +45,7 @@ export default function WalletScreen() {
               <Text style={s.txDate}>{new Date(t.createdAt).toLocaleDateString('en-IN')}</Text>
             </View>
             <Text style={[s.txAmt, { color: t.type === 'CREDIT' ? Colors.success : Colors.error }]}>
-              {t.type === 'CREDIT' ? '+' : '-'}₹{t.amount.toLocaleString('en-IN')}
+              {t.type === 'CREDIT' ? '+' : '-'}₹{fmtINR(t.amount)}
             </Text>
           </View>
         ))}
@@ -53,7 +54,7 @@ export default function WalletScreen() {
         <View style={s.settleBanner}>
           <View style={s.settleLeft}>
             <Text style={s.settleLblTop}>Upcoming COD Settlement</Text>
-            <Text style={s.settleAmt}>₹{((payouts ?? []).reduce((sum, p) => sum + p.amount, 0)).toLocaleString('en-IN')}</Text>
+            <Text style={s.settleAmt}>₹{fmtINR((payouts ?? []).reduce((sum, p) => sum + p.amount, 0))}</Text>
             <Text style={s.settleSub}>Next remittance: 2–3 working days after delivery</Text>
           </View>
           <View style={s.settleRight}>
@@ -73,7 +74,7 @@ export default function WalletScreen() {
               <Text style={s.txDate}>{new Date(p.createdAt).toLocaleDateString('en-IN')}</Text>
             </View>
             <View style={{ alignItems: 'flex-end', gap: 4 }}>
-              <Text style={[s.txAmt, { color: Colors.warning }]}>₹{p.amount.toLocaleString('en-IN')}</Text>
+              <Text style={[s.txAmt, { color: Colors.warning }]}>₹{fmtINR(p.amount)}</Text>
               <TouchableOpacity style={s.releaseBtn} onPress={() => releaseMut.mutate(p.id)}>
                 <Text style={{ color: Colors.success, fontSize: 11, fontWeight: '600' }}>Release</Text>
               </TouchableOpacity>

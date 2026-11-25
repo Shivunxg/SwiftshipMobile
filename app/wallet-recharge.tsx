@@ -10,6 +10,7 @@ import { Colors } from '../constants/colors';
 import { useWallet } from '../hooks/useOrders';
 import { useAuth } from '../lib/auth-store';
 import { api } from '../lib/api';
+import { fmtINR } from '../lib/format';
 
 const DENOMINATIONS = [500, 1000, 2500, 5000];
 const MIN_AMOUNT = 500;
@@ -79,7 +80,7 @@ export default function WalletRechargeScreen() {
 
   const pay = async () => {
     if (!isValid) {
-      Alert.alert('Invalid Amount', `Minimum recharge is ₹${MIN_AMOUNT.toLocaleString('en-IN')} and maximum is ₹${MAX_AMOUNT.toLocaleString('en-IN')}.`);
+      Alert.alert('Invalid Amount', `Minimum recharge is ₹${fmtINR(MIN_AMOUNT)} and maximum is ₹${fmtINR(MAX_AMOUNT)}.`);
       return;
     }
     setLoading(true);
@@ -122,11 +123,11 @@ export default function WalletRechargeScreen() {
             <View style={s.balRow}>
               <View>
                 <Text style={s.balLbl}>Current Wallet Balance</Text>
-                <Text style={s.balVal}>₹{bal.toLocaleString('en-IN')}</Text>
+                <Text style={s.balVal}>₹{fmtINR(bal)}</Text>
               </View>
               <View style={{ alignItems: 'flex-end' }}>
                 <Text style={s.holdLbl}>Amount on Hold</Text>
-                <Text style={s.holdVal}>₹{hold.toLocaleString('en-IN')}</Text>
+                <Text style={s.holdVal}>₹{fmtINR(hold)}</Text>
               </View>
             </View>
           </View>
@@ -148,12 +149,12 @@ export default function WalletRechargeScreen() {
                 activeOpacity={0.7}
               >
                 <Text style={[s.chipTxt, selected === d && s.chipTxtOn]}>
-                  ₹{d.toLocaleString('en-IN')}
+                  ₹{fmtINR(d)}
                 </Text>
               </TouchableOpacity>
             ))}
           </View>
-          <Text style={s.rangeHint}>Min value: ₹{MIN_AMOUNT.toLocaleString('en-IN')} &nbsp;|&nbsp; Max value: ₹{MAX_AMOUNT.toLocaleString('en-IN')}</Text>
+          <Text style={s.rangeHint}>Min value: ₹{fmtINR(MIN_AMOUNT)} | Max value: ₹{fmtINR(MAX_AMOUNT)}</Text>
 
           {/* Custom amount */}
           <Text style={s.sectionLabel}>Or enter a custom amount</Text>
@@ -210,12 +211,12 @@ export default function WalletRechargeScreen() {
 
           {/* Summary */}
           <View style={s.summaryCard}>
-            <SumRow label="Recharge Amount" value={`₹${amount.toLocaleString('en-IN')}`} />
+            <SumRow label="Recharge Amount" value={`₹${fmtINR(amount)}`} />
             {cashback > 0 && (
-              <SumRow label="Wallet Cashback" value={`-₹${cashback.toLocaleString('en-IN')}`} accent={Colors.success} />
+              <SumRow label="Wallet Cashback" value={`-₹${fmtINR(cashback)}`} accent={Colors.success} />
             )}
             <View style={s.divider} />
-            <SumRow label="Payable Amount" value={`₹${payable.toLocaleString('en-IN')}`} bold />
+            <SumRow label="Payable Amount" value={`₹${fmtINR(payable)}`} bold />
           </View>
 
           {/* Payment method */}
@@ -260,7 +261,7 @@ export default function WalletRechargeScreen() {
         >
           {loading
             ? <ActivityIndicator color="#fff" />
-            : <Text style={s.payBtnTxt}>Pay Now  ₹{payable.toLocaleString('en-IN')}</Text>
+            : <Text style={s.payBtnTxt}>Pay Now  ₹{fmtINR(payable)}</Text>
           }
         </TouchableOpacity>
       </View>
