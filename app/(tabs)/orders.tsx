@@ -130,18 +130,21 @@ export default function OrdersScreen() {
 
       {/* List */}
       {isLoading ? (
-        <ActivityIndicator color={Colors.accent} style={{ marginTop: 60 }} />
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <ActivityIndicator color={Colors.accent} />
+        </View>
       ) : (
-        <FlatList
-          data={filtered}
-          keyExtractor={o => String(o.id)}
-          renderItem={({ item }) => <OrderCard order={item} onContact={setContact} />}
-          onRefresh={() => { refetch(); }}
-          refreshing={isRefetching}
-          contentContainerStyle={filtered.length === 0 ? { flex: 1 } : { paddingBottom: 24, paddingTop: 4 }}
-          ListEmptyComponent={<EmptyState filter={filter} />}
-          ItemSeparatorComponent={() => <View style={{ height: 0 }} />}
-        />
+        <View style={{ flex: 1 }}>
+          <FlatList
+            data={filtered}
+            keyExtractor={o => String(o.id)}
+            renderItem={({ item }) => <OrderCard order={item} onContact={setContact} />}
+            onRefresh={() => { refetch(); }}
+            refreshing={isRefetching}
+            contentContainerStyle={filtered.length === 0 ? { flex: 1 } : { paddingBottom: 24, paddingTop: 4 }}
+            ListEmptyComponent={<EmptyState filter={filter} />}
+          />
+        </View>
       )}
 
       <WhatsAppModal order={contact} onClose={() => setContact(null)} />
