@@ -1,23 +1,17 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Linking, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { Colors } from '../../constants/colors';
 import { useWallet, usePayouts, useReleasePayoutMutation } from '../../hooks/useOrders';
 import { useAuth } from '../../lib/auth-store';
-import { api } from '../../lib/api';
 
 export default function WalletScreen() {
+  const router = useRouter();
   const { userId } = useAuth();
   const { data: wallet, isLoading } = useWallet(userId);
   const { data: payouts } = usePayouts();
   const releaseMut = useReleasePayoutMutation();
-
-  const topUp = async () => {
-    try {
-      const { data } = await api.post(`/api/wallet/topup/initialize/${userId}`, { amount: 1000 });
-      Linking.openURL(data.paymentUrl);
-    } catch { /* handle error */ }
-  };
 
   if (isLoading) return <ActivityIndicator color={Colors.accent} style={{ flex: 1, backgroundColor: Colors.bg }} />;
 
@@ -35,15 +29,15 @@ export default function WalletScreen() {
           </View>
         </View>
 
-        <TouchableOpacity style={s.addBtn} onPress={topUp}>
-          <Text style={s.addBtnTxt}>+ Add Money via Razorpay</Text>
+        <TouchableOpacity style={s.addBtn} onPress={() => router.push('/wallet-recharge')} activeOpacity={0.85}>
+          <Text style={s.addBtnTxt}>+ Add Money</Text>
         </TouchableOpacity>
 
         <Text style={s.sectionLbl}>Transactions</Text>
         {wallet?.transactions?.map(t => (
           <View key={t.id} style={s.txRow}>
             <View style={[s.txIco, { backgroundColor: t.type === 'CREDIT' ? Colors.successDim : Colors.errorDim }]}>
-              <Text style={{ fontSize: 16 }}>{t.type === 'CREDIT' ? '↓' : '↑'}</Text>
+              <Text style={{ fontSize: 14, fontWeight: '700', color: t.type === 'CREDIT' ? Colors.success : Colors.error }}>{t.type === 'CREDIT' ? '+' : '-'}</Text>
             </View>
             <View style={{ flex: 1 }}>
               <Text style={s.txDesc}>{t.description}</Text>
@@ -63,7 +57,7 @@ export default function WalletScreen() {
             <Text style={s.settleSub}>Next remittance: 2–3 working days after delivery</Text>
           </View>
           <View style={s.settleRight}>
-            <Text style={s.settleIcon}>🏦</Text>
+            <View style={s.settleIconBox}><Text style={s.settleIconTxt}>₹</Text></View>
             <View style={s.settleBadge}><Text style={s.settleBadgeTxt}>{(payouts ?? []).length} orders</Text></View>
           </View>
         </View>
@@ -72,7 +66,7 @@ export default function WalletScreen() {
         {payouts?.map(p => (
           <View key={p.id} style={s.txRow}>
             <View style={[s.txIco, { backgroundColor: Colors.warningDim }]}>
-              <Text style={{ fontSize: 16 }}>💰</Text>
+              <Text style={{ fontSize: 14, fontWeight: '800', color: Colors.warning }}>₹</Text>
             </View>
             <View style={{ flex: 1 }}>
               <Text style={s.txDesc}>Order #{p.orderId}</Text>
@@ -117,7 +111,8 @@ const s = StyleSheet.create({
   settleAmt:     { fontSize: 24, fontWeight: '700', color: Colors.fg, marginBottom: 4 },
   settleSub:     { fontSize: 11, color: Colors.fg2, lineHeight: 16 },
   settleRight:   { alignItems: 'center', gap: 8 },
-  settleIcon:    { fontSize: 32 },
+  settleIconBox: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(139,92,246,0.2)', alignItems: 'center', justifyContent: 'center' },
+  settleIconTxt: { fontSize: 20, fontWeight: '800', color: Colors.purple },
   settleBadge:   { backgroundColor: 'rgba(139,92,246,0.2)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
   settleBadgeTxt:{ fontSize: 11, fontWeight: '600', color: Colors.purple },
 });
