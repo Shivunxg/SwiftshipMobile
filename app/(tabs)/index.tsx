@@ -247,7 +247,7 @@ export default function Dashboard() {
         {/* Quick actions */}
         <Text style={s.sectionHead}>Quick Actions</Text>
         <View style={s.qaRow}>
-          <TouchableOpacity style={s.qaPrimary} activeOpacity={0.85}>
+          <TouchableOpacity style={s.qaPrimary} activeOpacity={0.85} onPress={() => router.push('/create-shipment')}>
             <Text style={s.qaPrimaryTxt}>+ Create Shipment</Text>
           </TouchableOpacity>
           <TouchableOpacity style={s.qaSecondary} onPress={() => router.push('/(tabs)/orders')}>

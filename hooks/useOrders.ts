@@ -54,3 +54,29 @@ export const useReleasePayoutMutation = () => {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['payouts'] }),
   });
 };
+
+export const useApproveOrder = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (orderId: number) => api.put(`/api/orders/${orderId}/approve`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['orders'] }),
+  });
+};
+
+export const useCreateShipment = () => {
+  const qc = useQueryClient();
+  const { tenantId } = useAuth();
+  return useMutation({
+    mutationFn: (body: Record<string, unknown>) =>
+      api.post(`/api/orders/merchant/${tenantId}`, body).then(r => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['orders'] }),
+  });
+};
+
+export const useAvailableCouriers = (pincode: string, weight: number) =>
+  useQuery({
+    queryKey: ['couriers', pincode, weight],
+    queryFn: () =>
+      api.get(`/api/couriers/available?pincode=${pincode}&weight=${weight}`).then(r => r.data),
+    enabled: pincode.length === 6 && weight > 0,
+  });

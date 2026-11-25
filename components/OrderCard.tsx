@@ -1,7 +1,8 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Linking } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Linking, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Colors } from '../constants/colors';
+import { useApproveOrder } from '../hooks/useOrders';
 import type { Order, OrderStatus } from '../lib/types';
 
 interface Props { order: Order; onContact: (order: Order) => void; }
@@ -24,11 +25,22 @@ const getMeta = (status: OrderStatus) =>
   STATUS_META[status] ?? { label: status, color: Colors.fg2 };
 
 export function OrderCard({ order, onContact }: Props) {
-  const router  = useRouter();
-  const meta    = getMeta(order.status);
-  const amount  = order.codAmount ?? order.orderValue ?? 0;
-  const isCOD   = order.paymentMethod === 'COD';
-  const isNDR   = order.status === 'DELIVERY_FAILED' || order.status === 'NDR';
+  const router      = useRouter();
+  const approveMut  = useApproveOrder();
+  const meta        = getMeta(order.status);
+  const amount      = order.codAmount ?? order.orderValue ?? 0;
+  const isCOD       = order.paymentMethod === 'COD';
+  const isNDR       = order.status === 'DELIVERY_FAILED' || order.status === 'NDR';
+  const isPending   = order.status === 'ORDER_CREATED';
+
+  const handleApprove = () => Alert.alert(
+    'Approve Order',
+    `Approve order ${order.orderNumber}?`,
+    [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Approve', onPress: () => approveMut.mutate(order.id) },
+    ]
+  );
 
   const dateStr = (() => {
     const raw = order.createdAt ?? order.placedAt ?? order.date;
@@ -86,20 +98,35 @@ export function OrderCard({ order, onContact }: Props) {
         <View style={s.row4}>
           <Text style={s.date}>{dateStr}</Text>
           <View style={s.actions}>
-            <TouchableOpacity
-              style={[s.actionBtn, { borderColor: Colors.success }]}
-              onPress={() => onContact(order)}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <Text style={[s.actionTxt, { color: Colors.success }]}>WhatsApp</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[s.actionBtn, { borderColor: Colors.accent }]}
-              onPress={() => Linking.openURL(`tel:+91${order.receiverPhone}`)}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <Text style={[s.actionTxt, { color: Colors.accent }]}>Call</Text>
-            </TouchableOpacity>
+            {isPending ? (
+              <TouchableOpacity
+                style={[s.actionBtn, { borderColor: Colors.success, backgroundColor: Colors.successDim }]}
+                onPress={handleApprove}
+                disabled={approveMut.isPending}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Text style={[s.actionTxt, { color: Colors.success }]}>
+                  {approveMut.isPending ? '...' : 'Approve Order'}
+                </Text>
+              </TouchableOpacity>
+            ) : (
+              <>
+                <TouchableOpacity
+                  style={[s.actionBtn, { borderColor: Colors.success }]}
+                  onPress={() => onContact(order)}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Text style={[s.actionTxt, { color: Colors.success }]}>WhatsApp</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[s.actionBtn, { borderColor: Colors.accent }]}
+                  onPress={() => Linking.openURL(`tel:+91${order.receiverPhone}`)}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Text style={[s.actionTxt, { color: Colors.accent }]}>Call</Text>
+                </TouchableOpacity>
+              </>
+            )}
           </View>
         </View>
       </View>

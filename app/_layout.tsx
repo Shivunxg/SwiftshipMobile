@@ -30,11 +30,12 @@ export default function RootLayout() {
       <QueryClientProvider client={qc}>
         <AuthGuard>
           <StatusBar style="light" />
-          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#07070C' } }}>
+          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#F5F6FA' } }}>
             <Stack.Screen name="(auth)" />
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="order/[id]" options={{ presentation: 'card' }} />
             <Stack.Screen name="account" />
+            <Stack.Screen name="create-shipment" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
           </Stack>
         </AuthGuard>
       </QueryClientProvider>

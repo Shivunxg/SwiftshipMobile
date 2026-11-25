@@ -11,11 +11,11 @@ export default function TabsLayout() {
       tabBarInactiveTintColor: Colors.fg2,
       tabBarLabelStyle: { fontSize: 10, fontWeight: '500' },
     }}>
-      <Tabs.Screen name="index"      options={{ title: 'Dashboard', tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 20 }}>⊞</Text> }} />
-      <Tabs.Screen name="orders"     options={{ title: 'Orders',    tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 20 }}>📦</Text> }} />
-      <Tabs.Screen name="operations" options={{ title: 'Ops',       tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 20 }}>⚡</Text> }} />
-      <Tabs.Screen name="wallet"     options={{ title: 'Wallet',    tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 20 }}>💳</Text> }} />
-      <Tabs.Screen name="account"    options={{ title: 'Account',   tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 20 }}>👤</Text> }} />
+      <Tabs.Screen name="index"      options={{ title: 'Home',    tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 18, fontWeight: '700' }}>⌂</Text> }} />
+      <Tabs.Screen name="orders"     options={{ title: 'Orders',  tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 16, fontWeight: '700' }}>≡</Text> }} />
+      <Tabs.Screen name="operations" options={{ title: 'Ops',     tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 16, fontWeight: '700' }}>◈</Text> }} />
+      <Tabs.Screen name="wallet"     options={{ title: 'Wallet',  tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 16, fontWeight: '700' }}>₹</Text> }} />
+      <Tabs.Screen name="account"    options={{ title: 'Account', tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 16, fontWeight: '700' }}>○</Text> }} />
     </Tabs>
   );
 }
