@@ -89,6 +89,7 @@ export default function AccountScreen() {
 
         {/* Business */}
         <Section title="Business">
+          <Row label="Manage Couriers"   sub="Enable or disable courier partners" onPress={nav('/manage-couriers')} />
           <Row label="Sub Store"         sub="Manage pickup locations"          onPress={soon('Sub Store')} />
           <Row label="Staff Person"      sub="Manage your team members"         onPress={soon('Staff management')} />
           <Row label="Collection Person" sub="Assign COD collectors"            onPress={soon('Collection persons')} />

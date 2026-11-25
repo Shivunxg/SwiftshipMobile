@@ -37,6 +37,7 @@ export default function RootLayout() {
             <Stack.Screen name="account" />
             <Stack.Screen name="create-shipment" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
             <Stack.Screen name="wallet-recharge" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
+            <Stack.Screen name="manage-couriers" options={{ presentation: 'card' }} />
           </Stack>
         </AuthGuard>
       </QueryClientProvider>

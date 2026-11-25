@@ -251,10 +251,10 @@ export default function Dashboard() {
             <Text style={s.qaPrimaryTxt}>+ Create Shipment</Text>
           </TouchableOpacity>
           <TouchableOpacity style={s.qaSecondary} onPress={() => router.push('/(tabs)/orders')}>
-            <Text style={s.qaSecTxt}>All Orders</Text>
+            <Text style={s.qaSecTxt}>Orders</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={s.qaSecondary} onPress={() => router.push('/(tabs)/wallet')}>
-            <Text style={s.qaSecTxt}>Wallet</Text>
+          <TouchableOpacity style={s.qaSecondary} onPress={() => router.push('/manage-couriers')}>
+            <Text style={s.qaSecTxt}>Couriers</Text>
           </TouchableOpacity>
         </View>
 
