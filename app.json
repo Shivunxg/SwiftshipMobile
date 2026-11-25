@@ -1,0 +1,13 @@
+{
+  "expo": {
+    "name": "SwiftShip",
+    "slug": "swiftship-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "swiftship",
+    "platforms": ["ios", "android"],
+    "ios": { "supportsTablet": false, "bundleIdentifier": "co.in.swiftship.mobile" },
+    "android": { "package": "co.in.swiftship.mobile", "adaptiveIcon": { "backgroundColor": "#07070C" } },
+    "plugins": ["expo-router", "expo-secure-store"]
+  }
+}
