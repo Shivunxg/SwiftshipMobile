@@ -3,7 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Colors } from '../../constants/colors';
-import { fmtINR } from '../../lib/format';
+import { fmtINR, fmtDate } from '../../lib/format';
 import { useWallet, usePayouts, useReleasePayoutMutation } from '../../hooks/useOrders';
 import { useAuth } from '../../lib/auth-store';
 
@@ -42,7 +42,7 @@ export default function WalletScreen() {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={s.txDesc}>{t.description}</Text>
-              <Text style={s.txDate}>{new Date(t.createdAt).toLocaleDateString('en-IN')}</Text>
+              <Text style={s.txDate}>{fmtDate(t.createdAt)}</Text>
             </View>
             <Text style={[s.txAmt, { color: t.type === 'CREDIT' ? Colors.success : Colors.error }]}>
               {t.type === 'CREDIT' ? '+' : '-'}₹{fmtINR(t.amount)}
@@ -71,7 +71,7 @@ export default function WalletScreen() {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={s.txDesc}>Order #{p.orderId}</Text>
-              <Text style={s.txDate}>{new Date(p.createdAt).toLocaleDateString('en-IN')}</Text>
+              <Text style={s.txDate}>{fmtDate(p.createdAt)}</Text>
             </View>
             <View style={{ alignItems: 'flex-end', gap: 4 }}>
               <Text style={[s.txAmt, { color: Colors.warning }]}>₹{fmtINR(p.amount)}</Text>

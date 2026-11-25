@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Linking, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Colors } from '../constants/colors';
+import { fmtINR, fmtDate } from '../lib/format';
 import { useApproveOrder } from '../hooks/useOrders';
 import type { Order, OrderStatus } from '../lib/types';
 
@@ -45,7 +46,7 @@ export function OrderCard({ order, onContact }: Props) {
   const dateStr = (() => {
     const raw = order.createdAt ?? order.placedAt ?? order.date;
     if (!raw) return '';
-    return new Date(raw).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: '2-digit' });
+    return fmtDate(raw);
   })();
 
   return (
@@ -75,7 +76,7 @@ export function OrderCard({ order, onContact }: Props) {
           <Text style={s.itemName} numberOfLines={1}>{order.itemContents ?? 'Shipment'}</Text>
           <View style={s.amtRow}>
             {isCOD && <View style={s.codTag}><Text style={s.codTxt}>COD</Text></View>}
-            <Text style={s.amt}>₹{amount.toLocaleString('en-IN')}</Text>
+            <Text style={s.amt}>₹{fmtINR(amount)}</Text>
           </View>
         </View>
 

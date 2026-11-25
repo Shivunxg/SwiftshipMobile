@@ -103,6 +103,7 @@ export default function OrdersScreen() {
       {/* Filter chips */}
       <FlatList
         horizontal
+        style={{ flexGrow: 0 }}
         data={FILTERS}
         keyExtractor={f => f}
         showsHorizontalScrollIndicator={false}

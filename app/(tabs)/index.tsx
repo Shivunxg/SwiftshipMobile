@@ -10,7 +10,7 @@ import { useOrders, useWallet } from '../../hooks/useOrders';
 import { useAuth } from '../../lib/auth-store';
 import { api } from '../../lib/api';
 import type { OrderStatus } from '../../lib/types';
-import { fmtINR } from '../../lib/format';
+import { fmtINR, fmtDateLong } from '../../lib/format';
 
 const { width: SW } = Dimensions.get('window');
 
@@ -86,13 +86,15 @@ function BankPromptModal({ visible, onAddBank, onLater }: {
   );
 }
 
+const SPARK_W = 110;
+
 // ── Sparkline ─────────────────────────────────────────────────────────────────
 function Sparkline({ values, color }: { values: number[]; color: string }) {
-  const max  = Math.max(...values, 1);
+  const max   = Math.max(...values, 1);
   const BAR_H = 32;
-  const barW  = Math.floor((SW - 80) / values.length) - 3;
+  const barW  = Math.max(4, Math.floor((SPARK_W - (values.length - 1) * 3) / values.length));
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 3, height: BAR_H }}>
+    <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 3, height: BAR_H, width: SPARK_W }}>
       {values.map((v, i) => (
         <View
           key={i}
@@ -179,7 +181,7 @@ export default function Dashboard() {
   const deliveryRate = counts.total > 0 ? Math.round((counts.delivered / counts.total) * 100) : 0;
   const recent       = o.slice(0, 5);
   const trend        = [counts.inTransit, counts.new, counts.ofd, counts.delivered, counts.ndr, counts.rto, counts.total];
-  const today        = new Date().toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
+  const today        = fmtDateLong(new Date());
 
   return (
     <SafeAreaView style={s.safe}>
@@ -307,7 +309,7 @@ const s = StyleSheet.create({
   walletBal:      { fontSize: 28, fontWeight: '800', color: '#fff', marginBottom: 10 },
   rateChip:       { alignSelf: 'flex-start', backgroundColor: 'rgba(255,255,255,0.18)', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
   rateChipTxt:    { fontSize: 11, fontWeight: '600', color: '#fff' },
-  walletRight:    { alignItems: 'flex-end', gap: 6 },
+  walletRight:    { width: 120, alignItems: 'flex-end', gap: 6 },
   sparkLbl:       { fontSize: 10, color: 'rgba(255,255,255,0.5)' },
 
   alertBanner:    { flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: 16, marginBottom: 12, backgroundColor: '#FFF5F5', borderRadius: 14, padding: 14, borderWidth: 1, borderColor: '#FECACa' },
