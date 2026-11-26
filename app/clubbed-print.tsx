@@ -87,17 +87,17 @@ export default function ClubbedPrintScreen() {
     if (printType === 'labels' || printType === 'both') {
       bulkLabelMut.mutate(ids, {
         onSuccess: (data) => {
-          if (data?.url) Linking.openURL(data.url);
+          if (data?.url) Linking.openURL(data.url).catch(() => {});
         },
         onError: () => {
           const url = `${BASE_URL}/api/orders/bulk-label?ids=${ids.join(',')}`;
-          Linking.openURL(url);
+          Linking.openURL(url).catch(() => Alert.alert('Error', 'Could not open label URL.'));
         },
       });
     }
     if (printType === 'invoices' || printType === 'both') {
       const url = `${BASE_URL}/api/orders/bulk-invoice?ids=${ids.join(',')}`;
-      Linking.openURL(url);
+      Linking.openURL(url).catch(() => Alert.alert('Error', 'Could not open invoice URL.'));
     }
   };
 
