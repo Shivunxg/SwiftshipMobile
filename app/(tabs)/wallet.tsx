@@ -88,17 +88,25 @@ export default function WalletScreen() {
               <Text style={s.wStatN}>₹{fmtINR(wallet?.creditLimit)}</Text>
               <Text style={s.wStatL}>Credit Limit</Text>
             </View>
+            <View style={s.wStatDiv} />
             <View style={s.wStat}>
               <Text style={s.wStatN}>₹{fmtINR(totalPending)}</Text>
               <Text style={s.wStatL}>Pending Payouts</Text>
             </View>
+            <View style={s.wStatDiv} />
+            <View style={s.wStat}>
+              <Text style={s.wStatN}>{(payouts ?? []).length}</Text>
+              <Text style={s.wStatL}>COD Orders</Text>
+            </View>
           </View>
         </View>
 
+        {/* Add Money via Razorpay — prominent green button */}
+        <TouchableOpacity style={s.addMoneyBtn} onPress={() => router.push('/wallet-recharge')} activeOpacity={0.85}>
+          <Text style={s.addMoneyTxt}>+ Add Money via Razorpay</Text>
+        </TouchableOpacity>
+
         <View style={s.actionRow}>
-          <TouchableOpacity style={[s.actionBtn, { flex: 2, backgroundColor: Colors.accent }]} onPress={() => router.push('/wallet-recharge')} activeOpacity={0.85}>
-            <Text style={[s.actionBtnTxt, { color: '#fff' }]}>+ Add Money</Text>
-          </TouchableOpacity>
           <TouchableOpacity style={[s.actionBtn, { flex: 1 }]} onPress={() => router.push('/pending-payouts' as any)} activeOpacity={0.85}>
             <Text style={s.actionBtnTxt}>Payouts</Text>
           </TouchableOpacity>
@@ -203,20 +211,21 @@ const s = StyleSheet.create({
   header:      { padding: 16, paddingBottom: 8 },
   title:       { fontSize: 20, fontWeight: '700', color: Colors.fg },
 
-  walletHero:  { margin: 16, backgroundColor: '#064E3B', borderRadius: 18, padding: 18, borderWidth: 1, borderColor: 'rgba(34,197,94,0.2)' },
+  walletHero:  { margin: 16, marginBottom: 12, backgroundColor: '#064E3B', borderRadius: 20, padding: 20, borderWidth: 1, borderColor: 'rgba(34,197,94,0.2)', shadowColor: '#064E3B', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.3, shadowRadius: 14, elevation: 8 },
   walletLbl:   { fontSize: 11, color: 'rgba(255,255,255,0.55)', marginBottom: 6 },
-  walletBal:   { fontSize: 32, fontWeight: '700', color: '#fff', marginBottom: 16 },
-  walletStats: { flexDirection: 'row', gap: 10 },
-  wStat:       { flex: 1, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 10, padding: 10, alignItems: 'center' },
-  wStatN:      { fontSize: 16, fontWeight: '700', color: '#fff' },
-  wStatL:      { fontSize: 10, color: 'rgba(255,255,255,0.55)', marginTop: 3 },
+  walletBal:   { fontSize: 34, fontWeight: '800', color: '#fff', marginBottom: 18, letterSpacing: -0.5 },
+  walletStats: { flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 14, paddingVertical: 12 },
+  wStat:       { flex: 1, alignItems: 'center' },
+  wStatN:      { fontSize: 15, fontWeight: '700', color: '#fff', marginBottom: 3 },
+  wStatL:      { fontSize: 10, color: 'rgba(255,255,255,0.55)' },
+  wStatDiv:    { width: 1, backgroundColor: 'rgba(255,255,255,0.15)' },
+
+  addMoneyBtn: { marginHorizontal: 16, marginBottom: 12, backgroundColor: '#16A34A', borderRadius: 16, paddingVertical: 15, alignItems: 'center', shadowColor: '#16A34A', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5 },
+  addMoneyTxt: { color: '#fff', fontSize: 15, fontWeight: '700' },
 
   actionRow:   { flexDirection: 'row', gap: 8, marginHorizontal: 16, marginBottom: 16 },
   actionBtn:   { backgroundColor: Colors.surface, borderRadius: 14, padding: 13, alignItems: 'center', borderWidth: 1, borderColor: Colors.border },
   actionBtnTxt:{ fontSize: 13, fontWeight: '700', color: Colors.fg },
-
-  addBtn:      { marginHorizontal: 16, marginBottom: 16, backgroundColor: Colors.success, borderRadius: 14, padding: 14, alignItems: 'center' },
-  addBtnTxt:   { color: '#fff', fontSize: 14, fontWeight: '700' },
 
   sectionLbl:  { fontSize: 11, fontWeight: '600', color: Colors.fg2, textTransform: 'uppercase', letterSpacing: 0.7, marginHorizontal: 16, marginBottom: 8, marginTop: 8 },
 

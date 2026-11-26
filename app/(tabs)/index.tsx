@@ -90,7 +90,7 @@ function MetricCard({ value, label, color, sublabel, onPress }: {
   value: string | number; label: string; color: string; sublabel?: string; onPress?: () => void;
 }) {
   return (
-    <TouchableOpacity style={[s.metricCard, { borderTopColor: color, borderTopWidth: 3 }]} onPress={onPress} activeOpacity={0.75}>
+    <TouchableOpacity style={[s.metricCard, { borderLeftColor: color, borderLeftWidth: 3 }]} onPress={onPress} activeOpacity={0.75}>
       <Text style={[s.metricVal, { color }]}>{value}</Text>
       <Text style={s.metricLabel}>{label}</Text>
       {sublabel ? <Text style={s.metricSub}>{sublabel}</Text> : null}
@@ -255,18 +255,21 @@ export default function Dashboard() {
           </TouchableOpacity>
         </View>
 
-        {/* Status metrics grid */}
+        {/* Status metrics grid — 2-column */}
         <View style={s.sectionRow}>
           <Text style={s.sectionHead}>Shipment Overview</Text>
+          <TouchableOpacity onPress={() => router.push('/(tabs)/orders')}>
+            <Text style={s.seeAll}>View all →</Text>
+          </TouchableOpacity>
         </View>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.metricsScroll}>
-          <MetricCard value={counts.new}       label="New Orders"    color={Colors.accent}  onPress={() => router.push('/(tabs)/orders')} />
-          <MetricCard value={counts.inTransit} label="In Transit"    color={Colors.warning} onPress={() => router.push('/(tabs)/orders')} />
-          <MetricCard value={counts.ofd}       label="Out for Del."  color={Colors.purple}  onPress={() => router.push('/(tabs)/orders')} />
-          <MetricCard value={counts.delivered} label="Delivered"     color={Colors.success} onPress={() => router.push('/(tabs)/orders')} />
-          <MetricCard value={counts.ndr}       label="NDR / Failed"  color={Colors.error}   onPress={() => router.push('/(tabs)/orders')} />
-          <MetricCard value={counts.rto}       label="RTO"           color={Colors.fg2}     onPress={() => router.push('/(tabs)/orders')} />
-        </ScrollView>
+        <View style={s.metricsGrid}>
+          <MetricCard value={counts.new}       label="New Orders"   color={Colors.accent}  onPress={() => router.push('/(tabs)/orders')} />
+          <MetricCard value={counts.inTransit} label="In Transit"   color={Colors.warning} onPress={() => router.push('/(tabs)/orders')} />
+          <MetricCard value={counts.ofd}       label="Out for Del." color={Colors.purple}  onPress={() => router.push('/(tabs)/orders')} />
+          <MetricCard value={counts.delivered} label="Delivered"    color={Colors.success} onPress={() => router.push('/(tabs)/orders')} />
+          <MetricCard value={counts.ndr}       label="NDR / Failed" color={Colors.error}   onPress={() => router.push('/(tabs)/orders')} />
+          <MetricCard value={counts.rto}       label="RTO"          color={Colors.fg2}     onPress={() => router.push('/(tabs)/orders')} />
+        </View>
 
         {/* Recent orders */}
         {recent.length > 0 && (
@@ -299,8 +302,6 @@ function getGreeting() {
   if (h < 17) return 'Good afternoon';
   return 'Good evening';
 }
-
-const METRIC_W = 120;
 
 const s = StyleSheet.create({
   safe:           { flex: 1, backgroundColor: Colors.bg },
@@ -340,8 +341,8 @@ const s = StyleSheet.create({
   sectionRow:     { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginBottom: 12 },
   seeAll:         { fontSize: 13, color: Colors.accent, fontWeight: '600' },
 
-  metricsScroll:  { paddingHorizontal: 16, gap: 10, paddingBottom: 4 },
-  metricCard:     { width: METRIC_W, backgroundColor: Colors.surface, borderRadius: 16, padding: 14, borderWidth: 1, borderColor: Colors.border, marginBottom: 16 },
+  metricsGrid:    { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 16, gap: 10, marginBottom: 16 },
+  metricCard:     { width: (SW - 42) / 2, backgroundColor: Colors.surface, borderRadius: 16, padding: 14, borderWidth: 1, borderColor: Colors.border },
   metricVal:      { fontSize: 26, fontWeight: '800', marginBottom: 4 },
   metricLabel:    { fontSize: 11, color: Colors.fg2, fontWeight: '500' },
   metricSub:      { fontSize: 10, color: Colors.fg3, marginTop: 2 },

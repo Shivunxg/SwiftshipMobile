@@ -214,14 +214,14 @@ export default function CreateShipmentScreen() {
 
               <Text style={s.dimLabel}>Payment Mode</Text>
               <View style={s.payRow}>
-                {(['ONLINE', 'COD'] as const).map(m => (
+                {(['PREPAID', 'COD'] as const).map(m => (
                   <TouchableOpacity
                     key={m}
                     style={[s.payChip, form.paymentMethod === m && s.payChipOn]}
                     onPress={() => set('paymentMethod')(m)}
                   >
                     <Text style={[s.payChipTxt, form.paymentMethod === m && s.payChipTxtOn]}>
-                      {m === 'ONLINE' ? 'Prepaid' : 'Cash on Delivery'}
+                      {m === 'PREPAID' ? 'Prepaid' : 'Cash on Delivery'}
                     </Text>
                   </TouchableOpacity>
                 ))}

@@ -1,145 +1,26 @@
 import React, { useState, useMemo } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
-  Alert, ActivityIndicator, ScrollView,
+  Alert, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Colors } from '../../constants/colors';
-import { useOrders, useCODOrders, useNDROrders, useRTOOrders, useInitiateRTO } from '../../hooks/useOrders';
+import { useCODOrders, useNDROrders, useRTOOrders, useInitiateRTO, usePickups } from '../../hooks/useOrders';
+import { useAuth } from '../../lib/auth-store';
 import { WhatsAppModal } from '../../components/WhatsAppModal';
 import { Badge } from '../../components/Badge';
 import type { Order } from '../../lib/types';
 
-type Tab = 'Business' | 'COD' | 'NDR' | 'RTO';
-const TABS: Tab[] = ['Business', 'COD', 'NDR', 'RTO'];
+type Tab = 'COD' | 'NDR' | 'RTO' | 'Pickups';
+const TABS: Tab[] = ['COD', 'NDR', 'RTO', 'Pickups'];
 
 const TAB_ICONS: Record<Tab, string> = {
-  Business: '📊',
-  COD:      '💸',
-  NDR:      '⚠️',
-  RTO:      '↩️',
+  COD:     '💸',
+  NDR:     '⚠️',
+  RTO:     '↩️',
+  Pickups: '📦',
 };
-
-// ── Business analytics ───────────────────────────────────────────────────────
-function BusinessTab() {
-  const { data: orders, isLoading, isError, refetch } = useOrders();
-  if (isLoading) return <ActivityIndicator color={Colors.accent} style={{ marginTop: 60 }} />;
-  if (isError) return (
-    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 }}>
-      <Text style={{ fontSize: 24, marginBottom: 12 }}>⚠️</Text>
-      <Text style={{ fontSize: 15, fontWeight: '700', color: Colors.fg, marginBottom: 8 }}>Could not load data</Text>
-      <TouchableOpacity style={{ backgroundColor: Colors.accent, borderRadius: 12, paddingHorizontal: 20, paddingVertical: 10 }} onPress={() => refetch()}>
-        <Text style={{ color: '#fff', fontWeight: '700' }}>Retry</Text>
-      </TouchableOpacity>
-    </View>
-  );
-
-  const o = orders ?? [];
-  const total      = o.length;
-  const delivered  = o.filter(x => x.status === 'DELIVERED').length;
-  const inTransit  = o.filter(x => x.status === 'IN_TRANSIT' || x.status === 'PICKED_UP').length;
-  const ofd        = o.filter(x => x.status === 'OUT_FOR_DELIVERY').length;
-  const ndr        = o.filter(x => x.status === 'DELIVERY_FAILED' || x.status === 'NDR').length;
-  const rto        = o.filter(x => x.status?.startsWith('RTO') ?? false).length;
-  const cod        = o.filter(x => x.paymentMethod === 'COD').length;
-  const prepaid    = o.filter(x => x.paymentMethod === 'PREPAID').length;
-
-  const delivRate  = total > 0 ? Math.round((delivered / total) * 100) : 0;
-  const ndrRate    = total > 0 ? Math.round((ndr / total) * 100) : 0;
-  const rtoRate    = total > 0 ? Math.round((rto / total) * 100) : 0;
-
-  return (
-    <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 32 }} showsVerticalScrollIndicator={false}>
-
-      {/* NDR overview card */}
-      <View style={bs.ndrCard}>
-        <View style={bs.ndrCardHeader}>
-          <Text style={bs.ndrCardTitle}>NDR Overview</Text>
-          <Text style={bs.ndrCardSub}>Last 30 days</Text>
-        </View>
-        <View style={bs.ndrGrid}>
-          {[
-            { label: 'Total NDR', value: ndr,  color: Colors.error },
-            { label: 'Pending',   value: ndr,  color: Colors.warning },
-            { label: 'Delivered', value: 0,    color: Colors.success },
-            { label: 'RTO',       value: rto,  color: Colors.fg2 },
-          ].map(item => (
-            <View key={item.label} style={bs.ndrItem}>
-              <Text style={[bs.ndrItemVal, { color: item.color }]}>{item.value}</Text>
-              <Text style={bs.ndrItemLbl}>{item.label}</Text>
-            </View>
-          ))}
-        </View>
-      </View>
-
-      {/* Key metrics row */}
-      <View style={bs.metricsRow}>
-        {[
-          { label: 'Total Orders', value: total,     color: Colors.accent },
-          { label: 'Delivered',    value: delivered, color: Colors.success },
-          { label: 'In Transit',   value: inTransit, color: Colors.warning },
-        ].map(m => (
-          <View key={m.label} style={[bs.metricBox, { borderTopColor: m.color }]}>
-            <Text style={[bs.metricVal, { color: m.color }]}>{m.value}</Text>
-            <Text style={bs.metricLbl}>{m.label}</Text>
-          </View>
-        ))}
-      </View>
-      <View style={bs.metricsRow}>
-        {[
-          { label: 'Out for Del.', value: ofd,  color: Colors.purple },
-          { label: 'NDR / Failed', value: ndr,  color: Colors.error },
-          { label: 'RTO',          value: rto,  color: Colors.fg2 },
-        ].map(m => (
-          <View key={m.label} style={[bs.metricBox, { borderTopColor: m.color }]}>
-            <Text style={[bs.metricVal, { color: m.color }]}>{m.value}</Text>
-            <Text style={bs.metricLbl}>{m.label}</Text>
-          </View>
-        ))}
-      </View>
-
-      {/* Performance */}
-      <Text style={bs.sectionTitle}>Performance</Text>
-      <View style={bs.perfCard}>
-        {[
-          { label: 'Delivery Rate', value: delivRate, color: Colors.success },
-          { label: 'NDR Rate',      value: ndrRate,   color: Colors.error },
-          { label: 'RTO Rate',      value: rtoRate,   color: Colors.warning },
-        ].map(m => (
-          <View key={m.label} style={bs.perfRow}>
-            <Text style={bs.perfLbl}>{m.label}</Text>
-            <View style={bs.perfTrack}>
-              <View style={[bs.perfFill, { width: `${Math.min(m.value, 100)}%`, backgroundColor: m.color }]} />
-            </View>
-            <Text style={[bs.perfVal, { color: m.color }]}>{m.value}%</Text>
-          </View>
-        ))}
-      </View>
-
-      {/* Payment split */}
-      <Text style={bs.sectionTitle}>Payment Mode</Text>
-      <View style={bs.splitCard}>
-        <View style={bs.splitBarRow}>
-          <View style={[bs.splitSegment, { flex: prepaid || 0.001, backgroundColor: Colors.accent }]} />
-          <View style={[bs.splitSegment, { flex: cod || 0.001, backgroundColor: Colors.warning }]} />
-        </View>
-        <View style={bs.splitLegend}>
-          {[
-            { label: 'Prepaid', count: prepaid, color: Colors.accent },
-            { label: 'COD',     count: cod,     color: Colors.warning },
-          ].map(item => (
-            <View key={item.label} style={bs.legendItem}>
-              <View style={[bs.legendDot, { backgroundColor: item.color }]} />
-              <Text style={bs.legendLbl}>{item.label}</Text>
-              <Text style={[bs.legendCount, { color: item.color }]}>{item.count}</Text>
-            </View>
-          ))}
-        </View>
-      </View>
-    </ScrollView>
-  );
-}
 
 // ── COD list ─────────────────────────────────────────────────────────────────
 function CODList({ onContact }: { onContact: (o: Order) => void }) {
@@ -273,6 +154,53 @@ function RTOList() {
   );
 }
 
+// ── Pickups list ─────────────────────────────────────────────────────────────
+function PickupsList() {
+  const { tenantId } = useAuth();
+  const { data: pickups, isLoading } = usePickups(tenantId);
+  if (isLoading) return <ActivityIndicator color={Colors.accent} style={{ marginTop: 40 }} />;
+
+  const STATUS_COLOR: Record<string, string> = {
+    PENDING:    Colors.warning,
+    SCHEDULED:  Colors.accent,
+    PICKED_UP:  Colors.success,
+  };
+
+  return (
+    <FlatList
+      data={pickups}
+      keyExtractor={p => String(p.id)}
+      contentContainerStyle={{ padding: 16, gap: 10 }}
+      showsVerticalScrollIndicator={false}
+      ListEmptyComponent={<EmptyState label="No Pickups" icon="📦" />}
+      renderItem={({ item: p }) => {
+        const color = STATUS_COLOR[p.status] ?? Colors.fg2;
+        return (
+          <View style={[s.card, { borderLeftWidth: 3, borderLeftColor: color }]}>
+            <View style={s.cardTop}>
+              <View style={{ flex: 1 }}>
+                <Text style={s.prodName}>{p.contactPerson}</Text>
+                <Text style={s.meta}>{p.pickupAddress}, {p.city}</Text>
+              </View>
+              <Badge label={p.status.replace('_', ' ')} variant={p.status === 'PICKED_UP' ? 'success' : p.status === 'SCHEDULED' ? 'accent' : 'warning'} />
+            </View>
+            <View style={s.amtRow}>
+              <View>
+                <Text style={s.metaLbl}>Packages / Weight</Text>
+                <Text style={s.metaVal}>{p.totalPackages ?? '—'} pkgs · {p.totalWeight ?? '—'} kg</Text>
+              </View>
+              <View style={{ alignItems: 'flex-end' }}>
+                <Text style={s.metaLbl}>Preferred Time</Text>
+                <Text style={s.metaVal}>{p.preferredTime ?? '—'}</Text>
+              </View>
+            </View>
+          </View>
+        );
+      }}
+    />
+  );
+}
+
 function EmptyState({ label, icon }: { label: string; icon: string }) {
   return (
     <View style={{ alignItems: 'center', paddingTop: 60, paddingHorizontal: 24 }}>
@@ -288,7 +216,7 @@ function EmptyState({ label, icon }: { label: string; icon: string }) {
 // ── Main screen ──────────────────────────────────────────────────────────────
 export default function OperationsScreen() {
   const router = useRouter();
-  const [tab, setTab] = useState<Tab>('Business');
+  const [tab, setTab] = useState<Tab>('COD');
   const [contact, setContact] = useState<Order | null>(null);
 
   return (
@@ -301,18 +229,24 @@ export default function OperationsScreen() {
       </View>
 
       {/* Quick action chips */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.qaScroll}>
-        {[
+      <FlatList
+        horizontal
+        data={[
           { label: 'Bulk Assign',   icon: '⚡', path: '/bulk-assign' },
           { label: 'Print Labels',  icon: '🖨',  path: '/clubbed-print' },
           { label: 'Weight Issues', icon: '⚖️', path: '/weight-discrepancy' },
-        ].map(item => (
-          <TouchableOpacity key={item.label} style={s.qaChip} onPress={() => router.push(item.path as any)} activeOpacity={0.75}>
+        ]}
+        keyExtractor={item => item.label}
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={s.qaScroll}
+        style={s.qaBar}
+        renderItem={({ item }) => (
+          <TouchableOpacity style={s.qaChip} onPress={() => router.push(item.path as any)} activeOpacity={0.75}>
             <Text style={s.qaChipIcon}>{item.icon}</Text>
             <Text style={s.qaChipLbl}>{item.label}</Text>
           </TouchableOpacity>
-        ))}
-      </ScrollView>
+        )}
+      />
 
       {/* Tab selector */}
       <View style={s.tabBar}>
@@ -328,10 +262,10 @@ export default function OperationsScreen() {
       </View>
 
       <View style={{ flex: 1 }}>
-        {tab === 'Business' && <BusinessTab />}
         {tab === 'COD' && <CODList onContact={setContact} />}
         {tab === 'NDR' && <NDRList onContact={setContact} />}
         {tab === 'RTO' && <RTOList />}
+        {tab === 'Pickups' && <PickupsList />}
       </View>
 
       <WhatsAppModal order={contact} onClose={() => setContact(null)} />
@@ -339,46 +273,13 @@ export default function OperationsScreen() {
   );
 }
 
-const bs = StyleSheet.create({
-  ndrCard:       { backgroundColor: Colors.error, borderRadius: 20, padding: 18, marginBottom: 16 },
-  ndrCardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  ndrCardTitle:  { fontSize: 16, fontWeight: '700', color: '#fff' },
-  ndrCardSub:    { fontSize: 11, color: 'rgba(255,255,255,0.6)' },
-  ndrGrid:       { flexDirection: 'row', gap: 10 },
-  ndrItem:       { flex: 1, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 12, padding: 12, alignItems: 'center' },
-  ndrItemVal:    { fontSize: 22, fontWeight: '800', color: '#fff', marginBottom: 4 },
-  ndrItemLbl:    { fontSize: 10, color: 'rgba(255,255,255,0.75)', textAlign: 'center' },
-
-  metricsRow:    { flexDirection: 'row', gap: 8, marginBottom: 8 },
-  metricBox:     { flex: 1, backgroundColor: Colors.surface, borderRadius: 14, padding: 14, borderTopWidth: 3, borderWidth: 1, borderColor: Colors.border },
-  metricVal:     { fontSize: 22, fontWeight: '800', marginBottom: 4 },
-  metricLbl:     { fontSize: 11, color: Colors.fg2 },
-
-  sectionTitle:  { fontSize: 11, fontWeight: '700', color: Colors.fg2, textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: 10, marginTop: 8 },
-
-  perfCard:      { backgroundColor: Colors.surface, borderRadius: 16, borderWidth: 1, borderColor: Colors.border, padding: 16, gap: 14, marginBottom: 16 },
-  perfRow:       { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  perfLbl:       { fontSize: 12, color: Colors.fg2, width: 90 },
-  perfTrack:     { flex: 1, height: 7, backgroundColor: Colors.surface2, borderRadius: 4, overflow: 'hidden' },
-  perfFill:      { height: 7, borderRadius: 4 },
-  perfVal:       { fontSize: 12, fontWeight: '700', width: 36, textAlign: 'right' },
-
-  splitCard:     { backgroundColor: Colors.surface, borderRadius: 16, borderWidth: 1, borderColor: Colors.border, padding: 16, marginBottom: 16 },
-  splitBarRow:   { flexDirection: 'row', height: 10, borderRadius: 6, overflow: 'hidden', marginBottom: 14 },
-  splitSegment:  { height: 10 },
-  splitLegend:   { flexDirection: 'row', gap: 24 },
-  legendItem:    { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  legendDot:     { width: 10, height: 10, borderRadius: 5 },
-  legendLbl:     { fontSize: 12, color: Colors.fg2 },
-  legendCount:   { fontSize: 12, fontWeight: '700' },
-});
-
 const s = StyleSheet.create({
   safe:        { flex: 1, backgroundColor: Colors.bg },
   header:      { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 10 },
   title:       { fontSize: 24, fontWeight: '800', color: Colors.fg, letterSpacing: -0.3 },
   subtitle:    { fontSize: 12, color: Colors.fg2, marginTop: 2 },
 
+  qaBar:       { flexGrow: 0, flexShrink: 0 },
   qaScroll:    { paddingHorizontal: 16, paddingBottom: 12, gap: 8, alignItems: 'center' },
   qaChip:      { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 10, backgroundColor: Colors.surface, borderRadius: 20, borderWidth: 1.5, borderColor: Colors.border },
   qaChipIcon:  { fontSize: 15 },
