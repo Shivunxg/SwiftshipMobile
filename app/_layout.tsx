@@ -2,9 +2,19 @@ import { useEffect } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StatusBar } from 'expo-status-bar';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useAuth } from '../lib/auth-store';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 
-const qc = new QueryClient();
+const qc = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 30_000,   // 30 s — don't refetch on every mount
+      retry: 2,
+      retryDelay: attempt => Math.min(1000 * 2 ** attempt, 10_000),
+    },
+  },
+});
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { token, hydrated, hydrate } = useAuth();
@@ -25,15 +35,32 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 
 export default function RootLayout() {
   return (
-    <QueryClientProvider client={qc}>
-      <AuthGuard>
-        <StatusBar style="light" />
-        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#07070C' } }}>
-          <Stack.Screen name="(auth)" />
-          <Stack.Screen name="(tabs)" />
-          <Stack.Screen name="order/[id]" options={{ presentation: 'card' }} />
-        </Stack>
-      </AuthGuard>
-    </QueryClientProvider>
+    <SafeAreaProvider>
+      <QueryClientProvider client={qc}>
+        <ErrorBoundary>
+          <AuthGuard>
+            <StatusBar style="light" />
+            <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#F5F6FA' } }}>
+              <Stack.Screen name="(auth)" />
+              <Stack.Screen name="(tabs)" />
+              <Stack.Screen name="__debug" options={{ presentation: 'modal' }} />
+              <Stack.Screen name="order/[id]" options={{ presentation: 'card' }} />
+              <Stack.Screen name="account" />
+              <Stack.Screen name="create-shipment" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
+              <Stack.Screen name="wallet-recharge" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
+              <Stack.Screen name="manage-couriers" options={{ presentation: 'card' }} />
+              <Stack.Screen name="courier-assignment" options={{ presentation: 'card' }} />
+              <Stack.Screen name="pending-payouts" options={{ presentation: 'card' }} />
+              <Stack.Screen name="payout/[id]" options={{ presentation: 'card' }} />
+              <Stack.Screen name="label-pickup" options={{ presentation: 'card' }} />
+              <Stack.Screen name="weight-discrepancy" options={{ presentation: 'card' }} />
+              <Stack.Screen name="invoice/[id]" options={{ presentation: 'card' }} />
+              <Stack.Screen name="clubbed-print" options={{ presentation: 'card' }} />
+              <Stack.Screen name="bulk-assign" options={{ presentation: 'card' }} />
+            </Stack>
+          </AuthGuard>
+        </ErrorBoundary>
+      </QueryClientProvider>
+    </SafeAreaProvider>
   );
 }

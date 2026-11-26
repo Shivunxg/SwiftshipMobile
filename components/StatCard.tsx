@@ -14,7 +14,7 @@ export function StatCard({ value, label, color = Colors.fg }: Props) {
 }
 
 const s = StyleSheet.create({
-  card:  { flex: 1, backgroundColor: Colors.surface, borderRadius: 14, padding: 13, borderWidth: 1, borderColor: Colors.border },
+  card:  { flex: 1, minWidth: '45%', backgroundColor: Colors.surface, borderRadius: 14, padding: 13, borderWidth: 1, borderColor: Colors.border },
   value: { fontSize: 24, fontWeight: '700', marginBottom: 4 },
   label: { fontSize: 11, color: Colors.fg2, fontWeight: '500' },
 });

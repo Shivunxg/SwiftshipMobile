@@ -8,9 +8,12 @@ interface Props { order: Order | null; onClose: () => void; }
 export function WhatsAppModal({ order, onClose }: Props) {
   if (!order) return null;
 
-  const phone = `91${order.receiverPhone}`;
-  const openWA = (msg: string) => Linking.openURL(`whatsapp://send?phone=${phone}&text=${encodeURIComponent(msg)}`);
-  const call   = () => Linking.openURL(`tel:+${phone}`);
+  const digits = (order.receiverPhone ?? '').replace(/^\+/, '').replace(/\D/g, '');
+  const phone  = digits.startsWith('91') ? digits : `91${digits}`;
+  const openWA = (msg: string) =>
+    Linking.openURL(`whatsapp://send?phone=${phone}&text=${encodeURIComponent(msg)}`)
+      .catch(() => Linking.openURL(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`).catch(() => {}));
+  const call   = () => Linking.openURL(`tel:+${phone}`).catch(() => {});
   const item   = order.itemContents ?? 'your order';
   const amount = order.codAmount ?? order.orderValue ?? 0;
 

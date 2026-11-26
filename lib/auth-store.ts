@@ -22,13 +22,15 @@ export const useAuth = create<AuthState>((set) => ({
   hydrated: false,
 
   hydrate: async () => {
-    const token = await SecureStore.getItemAsync('swiftship_token');
-    const meta = await SecureStore.getItemAsync('swiftship_meta');
-    if (token && meta) {
-      set({ token, ...JSON.parse(meta), hydrated: true });
-    } else {
-      set({ hydrated: true });
-    }
+    try {
+      const token = await SecureStore.getItemAsync('swiftship_token');
+      const meta  = await SecureStore.getItemAsync('swiftship_meta');
+      if (token && meta) {
+        set({ token, ...JSON.parse(meta), hydrated: true });
+        return;
+      }
+    } catch (e) {}
+    set({ hydrated: true });
   },
 
   login: async (email, password) => {

@@ -8,14 +8,14 @@ import { WhatsAppModal } from '../../components/WhatsAppModal';
 import { Badge } from '../../components/Badge';
 
 const STATUS_STEPS = [
-  'ORDER_CREATED', 'AWAITING_PICKUP', 'PICKED_UP',
+  'PROCESSING', 'READY_FOR_DISPATCH', 'PICKED_UP',
   'IN_TRANSIT', 'OUT_FOR_DELIVERY', 'DELIVERED',
 ];
 
 export default function OrderDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { data: order, isLoading } = useOrder(Number(id));
+  const { data: order, isLoading } = useOrder(id as string);
   const rtoMut = useInitiateRTO();
   const [showWA, setShowWA] = useState(false);
 
@@ -53,7 +53,7 @@ export default function OrderDetail() {
         </View>
 
         <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10, gap: 10 }}>
-          <Badge label={order.status.replace(/_/g, ' ')} variant={order.status === 'DELIVERED' ? 'success' : order.status.includes('FAILED') ? 'error' : 'accent'} />
+          <Badge label={(order.status ?? '').replace(/_/g, ' ')} variant={order.status === 'DELIVERED' ? 'success' : order.status?.includes('FAILED') ? 'error' : 'accent'} />
           {order.awbNumber ? <Text style={{ fontSize: 11, color: Colors.fg2 }}>AWB: {order.awbNumber}</Text> : null}
         </View>
 
@@ -117,7 +117,35 @@ export default function OrderDetail() {
           </View>
         </View>
 
-        {!order.status.startsWith('RTO') && order.status !== 'DELIVERED' && order.status !== 'CANCELLED' && (
+        {order.status === 'PROCESSING' && !order.awbNumber && (
+          <View style={s.cta}>
+            <TouchableOpacity
+              style={[s.ctaBtn, { flex: 1, backgroundColor: Colors.accent }]}
+              onPress={() => router.push({ pathname: '/courier-assignment', params: { orderId: String(order.id) } })}
+            >
+              <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>Assign Courier</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {order.awbNumber && (
+          <View style={s.cta}>
+            <TouchableOpacity
+              style={[s.ctaBtn, { backgroundColor: Colors.accentDim, borderWidth: 1, borderColor: `${Colors.accent}30` }]}
+              onPress={() => router.push({ pathname: '/label-pickup', params: { orderId: String(order.id) } } as any)}
+            >
+              <Text style={{ color: Colors.accent, fontWeight: '700', fontSize: 13 }}>Label & Pickup</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[s.ctaBtn, { backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border }]}
+              onPress={() => router.push(`/invoice/${order.id}` as any)}
+            >
+              <Text style={{ color: Colors.fg, fontWeight: '600', fontSize: 13 }}>GST Invoice</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {!(order.status?.startsWith('RTO') ?? false) && order.status !== 'DELIVERED' && order.status !== 'CANCELLED' && (
           <View style={s.cta}>
             <TouchableOpacity style={[s.ctaBtn, { backgroundColor: Colors.errorDim }]} onPress={initiateRTO}>
               <Text style={{ color: Colors.error, fontWeight: '700', fontSize: 13 }}>Initiate RTO</Text>

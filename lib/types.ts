@@ -1,11 +1,11 @@
 export type OrderStatus =
-  | 'ORDER_CREATED' | 'AWAITING_PICKUP' | 'PICKED_UP'
+  | 'PROCESSING' | 'READY_FOR_DISPATCH' | 'PICKED_UP'
   | 'IN_TRANSIT' | 'OUT_FOR_DELIVERY' | 'DELIVERED'
   | 'DELIVERY_FAILED' | 'NDR' | 'RTO_INITIATED' | 'RTO_IN_TRANSIT' | 'RTO_DELIVERED'
-  | 'CANCELLED';
+  | 'CANCELLED' | 'CANCELLED_BY_MERCHANT' | 'CANCELLED_BY_ADMIN';
 
 export interface Order {
-  id: number;
+  id: string;
   orderNumber: string;
   merchantId: number;
 
@@ -37,7 +37,7 @@ export interface Order {
   packageType: string | null;
 
   // Payment
-  paymentMethod: 'COD' | 'ONLINE';
+  paymentMethod: 'COD' | 'PREPAID';
   paymentStatus: 'PAID' | 'PENDING' | 'REFUNDED' | 'PARTIALLY_REFUNDED' | null;
   orderValue: number | null;
   currency: string | null;
@@ -85,22 +85,23 @@ export interface Wallet {
 }
 
 export interface Transaction {
-  id: number;
+  id: string;
   type: 'CREDIT' | 'DEBIT';
   amount: number;
   description: string;
+  date: string;
   createdAt: string;
 }
 
 export interface Pickup {
   id: number;
-  address: string;
-  contactName: string;
-  contactPhone: string;
+  pickupAddress: string;
+  contactPerson: string;
+  phoneNumber: string;
   city: string;
   pincode: string;
-  scheduledTime: string;
-  packageCount: number;
+  preferredTime: string;
+  totalPackages: number;
   totalWeight: number;
   status: 'PENDING' | 'SCHEDULED' | 'PICKED_UP';
   tenantId: number;
@@ -110,7 +111,9 @@ export interface Payout {
   id: number;
   amount: number;
   orderId: string;
-  status: 'PENDING' | 'RELEASED';
+  status: 'PENDING' | 'CASH_COLLECTED' | 'PROCESSED';
+  deliveryDate: string | null;
+  payoutDate: string | null;
   createdAt: string;
 }
 
@@ -122,4 +125,42 @@ export interface AuthResponse {
   name: string;
   companyName: string;
   walletBalance: number;
+}
+
+export interface WeightDiscrepancy {
+  id: number;
+  orderId: string;
+  orderNumber: string;
+  awbNumber: string | null;
+  courierName: string | null;
+  declaredWeight: number;
+  chargedWeight: number;
+  diffAmount: number;
+  status: 'PENDING' | 'DISPUTED' | 'ACCEPTED' | 'RESOLVED';
+  createdAt: string;
+  resolvedAt: string | null;
+  merchantRemarks: string | null;
+  adminRemarks: string | null;
+}
+
+export interface PayoutDetail {
+  id: number;
+  orderId: string;
+  orderNumber: string;
+  receiverName: string;
+  receiverCity: string;
+  awbNumber: string | null;
+  courierPartner: string | null;
+  codAmount: number;
+  freightCharge: number;
+  codHandlingCharge: number;
+  reverseCharge: number;
+  weightCharge: number;
+  netPayout: number;
+  status: 'PENDING' | 'CASH_COLLECTED' | 'PROCESSED';
+  expectedDate: string | null;
+  releasedAt: string | null;
+  createdAt: string;
+  batchId: string | null;
+  remark: string | null;
 }

@@ -1,7 +1,7 @@
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
-export const BASE_URL = 'http://your-server:8080';
+export const BASE_URL = 'https://app.swiftship.sendit.co.in';
 
 export const api = axios.create({ baseURL: BASE_URL, timeout: 15000 });
 
@@ -15,7 +15,8 @@ api.interceptors.response.use(
   (res) => res,
   (err) => {
     if (err.response?.status === 401) {
-      SecureStore.deleteItemAsync('swiftship_token');
+      // Lazy import to avoid circular dependency; clears both SecureStore + Zustand state
+      import('./auth-store').then(({ useAuth }) => useAuth.getState().logout()).catch(() => {});
     }
     return Promise.reject(err);
   }
