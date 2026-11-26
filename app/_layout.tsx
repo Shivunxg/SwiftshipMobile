@@ -39,6 +39,13 @@ export default function RootLayout() {
             <Stack.Screen name="wallet-recharge" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
             <Stack.Screen name="manage-couriers" options={{ presentation: 'card' }} />
             <Stack.Screen name="courier-assignment" options={{ presentation: 'card' }} />
+            <Stack.Screen name="pending-payouts" options={{ presentation: 'card' }} />
+            <Stack.Screen name="payout/[id]" options={{ presentation: 'card' }} />
+            <Stack.Screen name="label-pickup" options={{ presentation: 'card' }} />
+            <Stack.Screen name="weight-discrepancy" options={{ presentation: 'card' }} />
+            <Stack.Screen name="invoice/[id]" options={{ presentation: 'card' }} />
+            <Stack.Screen name="clubbed-print" options={{ presentation: 'card' }} />
+            <Stack.Screen name="bulk-assign" options={{ presentation: 'card' }} />
           </Stack>
         </AuthGuard>
       </QueryClientProvider>

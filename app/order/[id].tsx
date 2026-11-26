@@ -128,6 +128,23 @@ export default function OrderDetail() {
           </View>
         )}
 
+        {order.awbNumber && (
+          <View style={s.cta}>
+            <TouchableOpacity
+              style={[s.ctaBtn, { backgroundColor: Colors.accentDim, borderWidth: 1, borderColor: `${Colors.accent}30` }]}
+              onPress={() => router.push({ pathname: '/label-pickup', params: { orderId: String(order.id) } } as any)}
+            >
+              <Text style={{ color: Colors.accent, fontWeight: '700', fontSize: 13 }}>Label & Pickup</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[s.ctaBtn, { backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border }]}
+              onPress={() => router.push(`/invoice/${order.id}` as any)}
+            >
+              <Text style={{ color: Colors.fg, fontWeight: '600', fontSize: 13 }}>GST Invoice</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {!(order.status?.startsWith('RTO') ?? false) && order.status !== 'DELIVERED' && order.status !== 'CANCELLED' && (
           <View style={s.cta}>
             <TouchableOpacity style={[s.ctaBtn, { backgroundColor: Colors.errorDim }]} onPress={initiateRTO}>

@@ -123,3 +123,41 @@ export interface AuthResponse {
   companyName: string;
   walletBalance: number;
 }
+
+export interface WeightDiscrepancy {
+  id: number;
+  orderId: number;
+  orderNumber: string;
+  awbNumber: string | null;
+  courierPartner: string | null;
+  declaredWeight: number;
+  chargedWeight: number;
+  difference: number;
+  extraCharge: number;
+  status: 'PENDING' | 'DISPUTED' | 'ACCEPTED' | 'WAIVED';
+  detectedAt: string;
+  resolvedAt: string | null;
+  remark: string | null;
+}
+
+export interface PayoutDetail {
+  id: number;
+  orderId: string;
+  orderNumber: string;
+  receiverName: string;
+  receiverCity: string;
+  awbNumber: string | null;
+  courierPartner: string | null;
+  codAmount: number;
+  freightCharge: number;
+  codHandlingCharge: number;
+  reverseCharge: number;
+  weightCharge: number;
+  netPayout: number;
+  status: 'PENDING' | 'RELEASED';
+  expectedDate: string | null;
+  releasedAt: string | null;
+  createdAt: string;
+  batchId: string | null;
+  remark: string | null;
+}

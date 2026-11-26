@@ -85,9 +85,17 @@ export default function WalletScreen() {
           </View>
         </View>
 
-        <TouchableOpacity style={s.addBtn} onPress={() => router.push('/wallet-recharge')} activeOpacity={0.85}>
-          <Text style={s.addBtnTxt}>+ Add Money</Text>
-        </TouchableOpacity>
+        <View style={s.actionRow}>
+          <TouchableOpacity style={[s.actionBtn, { flex: 2, backgroundColor: Colors.accent }]} onPress={() => router.push('/wallet-recharge')} activeOpacity={0.85}>
+            <Text style={[s.actionBtnTxt, { color: '#fff' }]}>+ Add Money</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[s.actionBtn, { flex: 1 }]} onPress={() => router.push('/pending-payouts' as any)} activeOpacity={0.85}>
+            <Text style={s.actionBtnTxt}>Payouts</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[s.actionBtn, { flex: 1 }]} onPress={() => router.push('/weight-discrepancy' as any)} activeOpacity={0.85}>
+            <Text style={s.actionBtnTxt}>Weight</Text>
+          </TouchableOpacity>
+        </View>
 
         {/* Transactions */}
         {(wallet?.transactions?.length ?? 0) > 0 && (
@@ -192,6 +200,10 @@ const s = StyleSheet.create({
   wStat:       { flex: 1, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 10, padding: 10, alignItems: 'center' },
   wStatN:      { fontSize: 16, fontWeight: '700', color: '#fff' },
   wStatL:      { fontSize: 10, color: 'rgba(255,255,255,0.55)', marginTop: 3 },
+
+  actionRow:   { flexDirection: 'row', gap: 8, marginHorizontal: 16, marginBottom: 16 },
+  actionBtn:   { backgroundColor: Colors.surface, borderRadius: 14, padding: 13, alignItems: 'center', borderWidth: 1, borderColor: Colors.border },
+  actionBtnTxt:{ fontSize: 13, fontWeight: '700', color: Colors.fg },
 
   addBtn:      { marginHorizontal: 16, marginBottom: 16, backgroundColor: Colors.success, borderRadius: 14, padding: 14, alignItems: 'center' },
   addBtnTxt:   { color: '#fff', fontSize: 14, fontWeight: '700' },

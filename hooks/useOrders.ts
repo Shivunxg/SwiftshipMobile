@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth-store';
-import type { Order, Wallet, Pickup, Payout } from '../lib/types';
+import type { Order, Wallet, Pickup, Payout, WeightDiscrepancy, PayoutDetail } from '../lib/types';
 
 export const useOrders = () => {
   const tenantId = useAuth(s => s.tenantId);
@@ -98,3 +98,57 @@ export const useAssignCourier = () => {
     },
   });
 };
+
+export const usePayoutDetail = (id: number) =>
+  useQuery<PayoutDetail>({
+    queryKey: ['payout', id],
+    queryFn: () => api.get(`/api/payouts/${id}`).then(r => r.data),
+    enabled: !!id,
+  });
+
+export const useWeightDiscrepancies = () => {
+  const { tenantId } = useAuth();
+  return useQuery<WeightDiscrepancy[]>({
+    queryKey: ['weight-discrepancies', tenantId],
+    queryFn: () => api.get(`/api/orders/weight-discrepancy?tenantId=${tenantId}`).then(r => r.data),
+    enabled: !!tenantId,
+  });
+};
+
+export const useDisputeWeight = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (discrepancyId: number) =>
+      api.post(`/api/orders/weight-discrepancy/${discrepancyId}/dispute`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['weight-discrepancies'] }),
+  });
+};
+
+export const useBulkAssignCourier = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { orderIds: number[]; courierCode: string; courierName: string }) =>
+      api.post('/api/orders/bulk-assign-courier', body).then(r => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['orders'] }),
+  });
+};
+
+export const useSchedulePickup = () =>
+  useMutation({
+    mutationFn: (body: { orderIds: number[]; pickupDate: string; pickupTime: string }) =>
+      api.post('/api/pickups/schedule', body).then(r => r.data),
+  });
+
+export const useGenerateLabel = (orderId: number) =>
+  useQuery<{ url: string }>({
+    queryKey: ['label', orderId],
+    queryFn: () => api.get(`/api/orders/${orderId}/label`).then(r => r.data),
+    enabled: !!orderId,
+    staleTime: 10 * 60 * 1000,
+  });
+
+export const useBulkLabel = () =>
+  useMutation({
+    mutationFn: (orderIds: number[]) =>
+      api.post('/api/orders/bulk-label', { orderIds }).then(r => r.data),
+  });

@@ -4,6 +4,7 @@ import {
   Alert, ActivityIndicator, ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { Colors } from '../../constants/colors';
 import { useOrders, useCODOrders, useNDROrders, useRTOOrders, useInitiateRTO } from '../../hooks/useOrders';
 import { WhatsAppModal } from '../../components/WhatsAppModal';
@@ -283,6 +284,7 @@ function EmptyState({ label }: { label: string }) {
 
 // ── Main screen ──────────────────────────────────────────────────────────────
 export default function OperationsScreen() {
+  const router = useRouter();
   const [tab, setTab] = useState<Tab>('Business');
   const [contact, setContact] = useState<Order | null>(null);
 
@@ -291,6 +293,20 @@ export default function OperationsScreen() {
       <View style={s.header}>
         <Text style={s.title}>Operations</Text>
       </View>
+
+      {/* Quick actions */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.qaScroll}>
+        {[
+          { label: 'Bulk Assign', icon: '⚡', path: '/bulk-assign' },
+          { label: 'Print Labels', icon: '🖨', path: '/clubbed-print' },
+          { label: 'Weight Issues', icon: '⚖', path: '/weight-discrepancy' },
+        ].map(item => (
+          <TouchableOpacity key={item.label} style={s.qaChip} onPress={() => router.push(item.path as any)} activeOpacity={0.75}>
+            <Text style={s.qaIcon}>{item.icon}</Text>
+            <Text style={s.qaLabel}>{item.label}</Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
 
       {/* Tab bar */}
       <View style={s.tabBar}>
@@ -358,6 +374,10 @@ const s = StyleSheet.create({
   safe:       { flex: 1, backgroundColor: Colors.bg },
   header:     { paddingHorizontal: 16, paddingTop: 10, paddingBottom: 8 },
   title:      { fontSize: 22, fontWeight: '800', color: Colors.fg },
+  qaScroll:   { paddingHorizontal: 16, paddingBottom: 10, gap: 8, alignItems: 'center' },
+  qaChip:     { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 8, backgroundColor: Colors.surface, borderRadius: 20, borderWidth: 1, borderColor: Colors.border },
+  qaIcon:     { fontSize: 14 },
+  qaLabel:    { fontSize: 12, fontWeight: '600', color: Colors.fg2 },
   tabBar:     { flexDirection: 'row', marginHorizontal: 16, marginBottom: 8, backgroundColor: Colors.surface2, borderRadius: 14, padding: 4 },
   tabItem:    { flex: 1, paddingVertical: 8, alignItems: 'center', borderRadius: 10 },
   tabItemOn:  { backgroundColor: Colors.surface, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.08, shadowRadius: 4, elevation: 2 },
