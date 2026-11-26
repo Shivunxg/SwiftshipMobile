@@ -43,7 +43,7 @@ function BusinessTab() {
   const ndr        = o.filter(x => x.status === 'DELIVERY_FAILED' || x.status === 'NDR').length;
   const rto        = o.filter(x => x.status?.startsWith('RTO') ?? false).length;
   const cod        = o.filter(x => x.paymentMethod === 'COD').length;
-  const prepaid    = o.filter(x => x.paymentMethod === 'ONLINE').length;
+  const prepaid    = o.filter(x => x.paymentMethod === 'PREPAID').length;
 
   const delivRate  = total > 0 ? Math.round((delivered / total) * 100) : 0;
   const ndrRate    = total > 0 ? Math.round((ndr / total) * 100) : 0;
@@ -254,7 +254,7 @@ function RTOList() {
               <Text style={s.metaVal}>{o.rtoReason ?? 'Not specified'}</Text>
             </View>
           </View>
-          {(o.status === 'ORDER_CREATED' || o.status === 'IN_TRANSIT') && (
+          {(o.status === 'PROCESSING' || o.status === 'IN_TRANSIT') && (
             <View style={s.btnRow}>
               <TouchableOpacity
                 style={[s.btn, { backgroundColor: Colors.errorDim }]}

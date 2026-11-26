@@ -27,7 +27,7 @@ interface FormData {
   width: string;
   height: string;
   orderValue: string;
-  paymentMethod: 'COD' | 'ONLINE';
+  paymentMethod: 'COD' | 'PREPAID';
   codAmount: string;
   // Pickup
   pickupLocationId: string;
@@ -37,7 +37,7 @@ const INIT: FormData = {
   receiverName: '', receiverPhone: '', receiverAddress: '',
   receiverCity: '', receiverState: '', receiverPincode: '',
   itemContents: '', weight: '', length: '', width: '', height: '',
-  orderValue: '', paymentMethod: 'ONLINE', codAmount: '',
+  orderValue: '', paymentMethod: 'PREPAID', codAmount: '',
   pickupLocationId: '',
 };
 
@@ -242,8 +242,8 @@ export default function CreateShipmentScreen() {
                       onPress={() => set('pickupLocationId')(String(p.id))}
                     >
                       <View style={{ flex: 1 }}>
-                        <Text style={s.pickupName}>{p.contactName}</Text>
-                        <Text style={s.pickupAddr}>{p.address}, {p.city} — {p.pincode}</Text>
+                        <Text style={s.pickupName}>{p.contactPerson}</Text>
+                        <Text style={s.pickupAddr}>{p.pickupAddress}, {p.city} — {p.pincode}</Text>
                       </View>
                       {String(p.id) === form.pickupLocationId && (
                         <View style={s.pickupCheck}><Text style={s.pickupCheckTxt}>✓</Text></View>

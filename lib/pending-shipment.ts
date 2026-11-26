@@ -14,7 +14,7 @@ export type PendingShipmentPayload = {
   width: number | null;
   height: number | null;
   orderValue: number;
-  paymentMethod: 'COD' | 'ONLINE';
+  paymentMethod: 'COD' | 'PREPAID';
   codAmount: number | null;
   pickupLocationId: number | null;
   fromPincode: string; // sender pincode

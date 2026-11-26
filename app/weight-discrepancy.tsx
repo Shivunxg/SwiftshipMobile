@@ -10,20 +10,20 @@ import { fmtINR, fmtDate } from '../lib/format';
 import { useWeightDiscrepancies, useDisputeWeight } from '../hooks/useOrders';
 import type { WeightDiscrepancy } from '../lib/types';
 
-type Filter = 'All' | 'PENDING' | 'DISPUTED' | 'ACCEPTED' | 'WAIVED';
-const FILTERS: Filter[] = ['All', 'PENDING', 'DISPUTED', 'ACCEPTED', 'WAIVED'];
+type Filter = 'All' | 'PENDING' | 'DISPUTED' | 'ACCEPTED' | 'RESOLVED';
+const FILTERS: Filter[] = ['All', 'PENDING', 'DISPUTED', 'ACCEPTED', 'RESOLVED'];
 
 const STATUS_COLOR: Record<WeightDiscrepancy['status'], string> = {
   PENDING:  Colors.warning,
   DISPUTED: Colors.accent,
   ACCEPTED: Colors.error,
-  WAIVED:   Colors.success,
+  RESOLVED: Colors.success,
 };
 const STATUS_LABEL: Record<WeightDiscrepancy['status'], string> = {
   PENDING:  'Pending',
   DISPUTED: 'Disputed',
   ACCEPTED: 'Accepted',
-  WAIVED:   'Waived',
+  RESOLVED: 'Resolved',
 };
 
 function DiscrepancyCard({ item, onDispute }: {
@@ -36,7 +36,7 @@ function DiscrepancyCard({ item, onDispute }: {
         <View style={{ flex: 1 }}>
           <Text style={dc.orderNum}>Order #{item.orderNumber}</Text>
           {item.awbNumber && <Text style={dc.awb}>AWB: {item.awbNumber}</Text>}
-          {item.courierPartner && <Text style={dc.courier}>{item.courierPartner}</Text>}
+          {item.courierName && <Text style={dc.courier}>{item.courierName}</Text>}
         </View>
         <View style={[dc.statusBadge, { backgroundColor: `${color}18`, borderColor: `${color}30` }]}>
           <Text style={[dc.statusTxt, { color }]}>{STATUS_LABEL[item.status]}</Text>
@@ -56,13 +56,13 @@ function DiscrepancyCard({ item, onDispute }: {
           <Text style={dc.weightLbl}>Charged</Text>
         </View>
         <View style={dc.diff}>
-          <Text style={dc.diffVal}>+{item.difference} kg</Text>
-          <Text style={dc.diffCharge}>₹{fmtINR(item.extraCharge)} extra</Text>
+          <Text style={dc.diffVal}>+{item.diffAmount} kg</Text>
+          <Text style={dc.diffCharge}>₹{fmtINR(item.diffAmount)} extra</Text>
         </View>
       </View>
 
       <View style={dc.footer}>
-        <Text style={dc.date}>Detected: {fmtDate(item.detectedAt)}</Text>
+        <Text style={dc.date}>Detected: {fmtDate(item.createdAt)}</Text>
         {item.status === 'PENDING' && (
           <TouchableOpacity style={dc.disputeBtn} onPress={() => onDispute(item)}>
             <Text style={dc.disputeTxt}>Dispute</Text>
@@ -113,13 +113,13 @@ export default function WeightDiscrepancyScreen() {
   }, [discrepancies]);
 
   const totalExtraCharge = useMemo(() =>
-    (discrepancies ?? []).filter(d => d.status === 'PENDING' || d.status === 'ACCEPTED').reduce((s, d) => s + d.extraCharge, 0),
+    (discrepancies ?? []).filter(d => d.status === 'PENDING' || d.status === 'ACCEPTED').reduce((s, d) => s + d.diffAmount, 0),
     [discrepancies]
   );
 
   const handleDispute = (d: WeightDiscrepancy) => Alert.alert(
     'Dispute Weight',
-    `Dispute the weight charge of ₹${fmtINR(d.extraCharge)} for Order #${d.orderNumber}?\n\nOur team will review within 2–3 business days.`,
+    `Dispute the weight charge of ₹${fmtINR(d.diffAmount)} for Order #${d.orderNumber}?\n\nOur team will review within 2–3 business days.`,
     [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Dispute', onPress: () => disputeMut.mutate(d.id) },

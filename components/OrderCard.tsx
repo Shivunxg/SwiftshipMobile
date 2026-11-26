@@ -13,8 +13,8 @@ interface Props {
 }
 
 const STATUS_META: Record<string, { label: string; color: string }> = {
-  ORDER_CREATED:   { label: 'Created',          color: Colors.accent  },
-  AWAITING_PICKUP: { label: 'Awaiting Pickup',  color: Colors.accent  },
+  PROCESSING:        { label: 'Processing',         color: Colors.accent  },
+  READY_FOR_DISPATCH: { label: 'Ready for Dispatch', color: Colors.accent  },
   PICKED_UP:       { label: 'Picked Up',        color: Colors.warning },
   IN_TRANSIT:      { label: 'In Transit',       color: Colors.warning },
   OUT_FOR_DELIVERY:{ label: 'Out for Delivery', color: Colors.purple  },
@@ -35,7 +35,7 @@ export function OrderCard({ order, onContact, onApprove, approvePending }: Props
   const amount      = order.codAmount ?? order.orderValue ?? 0;
   const isCOD       = order.paymentMethod === 'COD';
   const isNDR       = order.status === 'DELIVERY_FAILED' || order.status === 'NDR';
-  const isPending   = order.status === 'ORDER_CREATED';
+  const isPending   = order.status === 'PROCESSING';
 
   const handleApprove = () => {
     if (!onApprove) return;

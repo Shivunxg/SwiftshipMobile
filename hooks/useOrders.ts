@@ -42,7 +42,7 @@ export const useRTOOrders = () => {
 export const useInitiateRTO = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (orderId: number) => api.put(`/api/orders/${orderId}/rto-initiate`),
+    mutationFn: (orderId: string) => api.put(`/api/orders/${orderId}/rto-initiate`),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['orders'] }),
   });
 };
@@ -58,7 +58,7 @@ export const useReleasePayoutMutation = () => {
 export const useApproveOrder = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (orderId: number) => api.put(`/api/orders/${orderId}/approve`),
+    mutationFn: (orderId: string) => api.put(`/api/orders/${orderId}/status`, { status: 'READY_FOR_DISPATCH' }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['orders'] }),
   });
 };
@@ -90,8 +90,8 @@ export const useChangePassword = () =>
 export const useAssignCourier = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ orderId, courierCode, courierName }: { orderId: number; courierCode: string; courierName: string }) =>
-      api.put(`/api/orders/${orderId}/assign-courier`, { courierCode, courierName }),
+    mutationFn: ({ orderId, courierCode, courierName }: { orderId: string; courierCode: string; courierName: string }) =>
+      api.post(`/api/orders/${orderId}/ship`, { courierCode, courierName }),
     onSuccess: (_, { orderId }) => {
       qc.invalidateQueries({ queryKey: ['orders'] });
       qc.invalidateQueries({ queryKey: ['order', orderId] });
@@ -127,7 +127,7 @@ export const useDisputeWeight = () => {
 export const useBulkAssignCourier = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body: { orderIds: number[]; courierCode: string; courierName: string }) =>
+    mutationFn: (body: { orderIds: string[]; courierCode: string; courierName: string }) =>
       api.post('/api/orders/bulk-assign-courier', body).then(r => r.data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['orders'] }),
   });
@@ -135,11 +135,11 @@ export const useBulkAssignCourier = () => {
 
 export const useSchedulePickup = () =>
   useMutation({
-    mutationFn: (body: { orderIds: number[]; pickupDate: string; pickupTime: string }) =>
+    mutationFn: (body: { orderIds: string[]; pickupDate: string; pickupTime: string }) =>
       api.post('/api/pickups/schedule', body).then(r => r.data),
   });
 
-export const useGenerateLabel = (orderId: number) =>
+export const useGenerateLabel = (orderId: string) =>
   useQuery<{ url: string }>({
     queryKey: ['label', orderId],
     queryFn: () => api.get(`/api/orders/${orderId}/label`).then(r => r.data),
@@ -149,6 +149,6 @@ export const useGenerateLabel = (orderId: number) =>
 
 export const useBulkLabel = () =>
   useMutation({
-    mutationFn: (orderIds: number[]) =>
+    mutationFn: (orderIds: string[]) =>
       api.post('/api/orders/bulk-label', { orderIds }).then(r => r.data),
   });

@@ -28,7 +28,7 @@ const FILTER_COLORS: Record<Filter, string> = {
 function matchFilter(o: Order, filter: Filter): boolean {
   switch (filter) {
     case 'All':        return true;
-    case 'New':        return o.status === 'ORDER_CREATED' || o.status === 'AWAITING_PICKUP';
+    case 'New':        return o.status === 'PROCESSING' || o.status === 'READY_FOR_DISPATCH';
     case 'In Transit': return o.status === 'IN_TRANSIT' || o.status === 'PICKED_UP';
     case 'OFD':        return o.status === 'OUT_FOR_DELIVERY';
     case 'Delivered':  return o.status === 'DELIVERED';

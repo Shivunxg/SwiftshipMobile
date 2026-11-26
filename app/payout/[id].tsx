@@ -52,7 +52,7 @@ export default function PayoutDetailScreen() {
     <ActivityIndicator color={Colors.accent} style={{ flex: 1, backgroundColor: Colors.bg }} />
   );
 
-  const isReleased = payout.status === 'RELEASED';
+  const isReleased = payout.status === 'PROCESSED' || payout.status === 'CASH_COLLECTED';
 
   const confirmRelease = () => Alert.alert(
     'Release Payout',

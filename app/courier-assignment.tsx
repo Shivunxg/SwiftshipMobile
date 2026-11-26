@@ -64,11 +64,11 @@ function useCourierRates(params: {
   });
 }
 
-function useAssignCourier(orderId: number | null) {
+function useAssignCourier(orderId: string | null) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (body: { courierCode: string; courierName: string }) =>
-      api.put(`/api/orders/${orderId}/assign-courier`, body),
+      api.post(`/api/orders/${orderId}/ship`, body),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['orders'] });
       qc.invalidateQueries({ queryKey: ['order', orderId] });
@@ -204,7 +204,7 @@ export default function CourierAssignmentScreen() {
   const fromPincode   = params.fromPincode   ?? existingOrder?.senderPincode   ?? '';
   const toPincode     = params.toPincode     ?? existingOrder?.receiverPincode  ?? '';
   const weight        = Number(params.weight ?? existingOrder?.weight ?? 0);
-  const paymentMethod = params.paymentMethod ?? existingOrder?.paymentMethod    ?? 'ONLINE';
+  const paymentMethod = params.paymentMethod ?? existingOrder?.paymentMethod    ?? 'PREPAID';
 
   const { data: rates, isLoading, refetch, isRefetching } = useCourierRates({
     fromPincode, toPincode, weight, paymentMethod,

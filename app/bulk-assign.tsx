@@ -68,9 +68,9 @@ function OrderRow({ order, selected, onToggle }: {
         <Text style={or.weight}>{order.weight ?? '—'} kg · {order.paymentMethod}</Text>
       </View>
       <View style={{ alignItems: 'flex-end' }}>
-        <View style={[or.statusBadge, { backgroundColor: order.status === 'ORDER_CREATED' ? Colors.accentDim : Colors.warningDim }]}>
-          <Text style={[or.statusTxt, { color: order.status === 'ORDER_CREATED' ? Colors.accent : Colors.warning }]}>
-            {order.status === 'ORDER_CREATED' ? 'New' : 'Awaiting'}
+        <View style={[or.statusBadge, { backgroundColor: order.status === 'PROCESSING' ? Colors.accentDim : Colors.warningDim }]}>
+          <Text style={[or.statusTxt, { color: order.status === 'PROCESSING' ? Colors.accent : Colors.warning }]}>
+            {order.status === 'PROCESSING' ? 'Processing' : 'Ready'}
           </Text>
         </View>
       </View>
@@ -136,7 +136,7 @@ export default function BulkAssignScreen() {
 
   const eligible = useMemo(() =>
     (allOrders ?? []).filter(o =>
-      o.status === 'ORDER_CREATED' || o.status === 'AWAITING_PICKUP'
+      o.status === 'PROCESSING' || o.status === 'READY_FOR_DISPATCH'
     ),
     [allOrders]
   );

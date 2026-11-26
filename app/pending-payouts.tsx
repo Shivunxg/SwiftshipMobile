@@ -26,11 +26,12 @@ function isoDate(d: Date | null): string {
 }
 
 function StatusPill({ status }: { status: Payout['status'] }) {
-  const isReleased = status === 'RELEASED';
+  const isReleased = status === 'PROCESSED' || status === 'CASH_COLLECTED';
+  const label = status === 'PROCESSED' ? 'Processed' : status === 'CASH_COLLECTED' ? 'Cash Collected' : 'Pending';
   return (
     <View style={[pill.wrap, isReleased ? pill.released : pill.pending]}>
       <Text style={[pill.txt, isReleased ? pill.relTxt : pill.penTxt]}>
-        {isReleased ? 'Released' : 'Pending'}
+        {label}
       </Text>
     </View>
   );
@@ -153,7 +154,7 @@ export default function PendingPayoutsScreen() {
 
   const all = payouts ?? [];
   const pending  = all.filter(p => p.status === 'PENDING');
-  const released = all.filter(p => p.status === 'RELEASED');
+  const released = all.filter(p => p.status === 'PROCESSED' || p.status === 'CASH_COLLECTED');
   const totalPending = pending.reduce((s, p) => s + p.amount, 0);
 
   const confirmRelease = (p: Payout) => Alert.alert(

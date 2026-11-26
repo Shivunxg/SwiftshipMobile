@@ -15,33 +15,33 @@ import { fmtINR } from '../../lib/format';
 const { width: SW } = Dimensions.get('window');
 
 const STATUS_COLOR: Partial<Record<OrderStatus, string>> = {
-  ORDER_CREATED:    Colors.accent,
-  AWAITING_PICKUP:  Colors.accent,
-  PICKED_UP:        Colors.warning,
-  IN_TRANSIT:       Colors.warning,
-  OUT_FOR_DELIVERY: Colors.purple,
-  DELIVERED:        Colors.success,
-  DELIVERY_FAILED:  Colors.error,
-  NDR:              Colors.error,
-  RTO_INITIATED:    Colors.error,
-  RTO_IN_TRANSIT:   Colors.error,
-  RTO_DELIVERED:    Colors.fg2,
-  CANCELLED:        Colors.fg3,
+  PROCESSING:        Colors.accent,
+  READY_FOR_DISPATCH: Colors.accent,
+  PICKED_UP:         Colors.warning,
+  IN_TRANSIT:        Colors.warning,
+  OUT_FOR_DELIVERY:  Colors.purple,
+  DELIVERED:         Colors.success,
+  DELIVERY_FAILED:   Colors.error,
+  NDR:               Colors.error,
+  RTO_INITIATED:     Colors.error,
+  RTO_IN_TRANSIT:    Colors.error,
+  RTO_DELIVERED:     Colors.fg2,
+  CANCELLED:         Colors.fg3,
 };
 
 const STATUS_LABEL: Partial<Record<OrderStatus, string>> = {
-  ORDER_CREATED:    'Created',
-  AWAITING_PICKUP:  'Awaiting Pickup',
-  PICKED_UP:        'Picked Up',
-  IN_TRANSIT:       'In Transit',
-  OUT_FOR_DELIVERY: 'Out for Delivery',
-  DELIVERED:        'Delivered',
-  DELIVERY_FAILED:  'Failed',
-  NDR:              'NDR',
-  RTO_INITIATED:    'RTO Initiated',
-  RTO_IN_TRANSIT:   'RTO In Transit',
-  RTO_DELIVERED:    'RTO Delivered',
-  CANCELLED:        'Cancelled',
+  PROCESSING:        'Processing',
+  READY_FOR_DISPATCH: 'Ready for Dispatch',
+  PICKED_UP:         'Picked Up',
+  IN_TRANSIT:        'In Transit',
+  OUT_FOR_DELIVERY:  'Out for Delivery',
+  DELIVERED:         'Delivered',
+  DELIVERY_FAILED:   'Failed',
+  NDR:               'NDR',
+  RTO_INITIATED:     'RTO Initiated',
+  RTO_IN_TRANSIT:    'RTO In Transit',
+  RTO_DELIVERED:     'RTO Delivered',
+  CANCELLED:         'Cancelled',
 };
 
 function BankPromptModal({ visible, onAddBank, onLater }: {
@@ -149,7 +149,7 @@ export default function Dashboard() {
 
   const o = orders ?? [];
   const counts = {
-    new:       o.filter(x => x.status === 'ORDER_CREATED' || x.status === 'AWAITING_PICKUP').length,
+    new:       o.filter(x => x.status === 'PROCESSING' || x.status === 'READY_FOR_DISPATCH').length,
     inTransit: o.filter(x => x.status === 'IN_TRANSIT' || x.status === 'PICKED_UP').length,
     ofd:       o.filter(x => x.status === 'OUT_FOR_DELIVERY').length,
     delivered: o.filter(x => x.status === 'DELIVERED').length,

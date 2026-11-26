@@ -8,7 +8,7 @@ import { WhatsAppModal } from '../../components/WhatsAppModal';
 import { Badge } from '../../components/Badge';
 
 const STATUS_STEPS = [
-  'ORDER_CREATED', 'AWAITING_PICKUP', 'PICKED_UP',
+  'PROCESSING', 'READY_FOR_DISPATCH', 'PICKED_UP',
   'IN_TRANSIT', 'OUT_FOR_DELIVERY', 'DELIVERED',
 ];
 
@@ -117,7 +117,7 @@ export default function OrderDetail() {
           </View>
         </View>
 
-        {order.status === 'ORDER_CREATED' && !order.awbNumber && (
+        {order.status === 'PROCESSING' && !order.awbNumber && (
           <View style={s.cta}>
             <TouchableOpacity
               style={[s.ctaBtn, { flex: 1, backgroundColor: Colors.accent }]}
