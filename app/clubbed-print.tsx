@@ -14,7 +14,7 @@ import type { Order } from '../lib/types';
 type PrintType = 'labels' | 'invoices' | 'both';
 
 function OrderSelectRow({ order, selected, onToggle }: {
-  order: Order; selected: boolean; onToggle: (id: number) => void;
+  order: Order; selected: boolean; onToggle: (id: string) => void;
 }) {
   return (
     <TouchableOpacity style={[or.row, selected && or.rowSelected]} onPress={() => onToggle(order.id)} activeOpacity={0.75}>
@@ -53,7 +53,7 @@ export default function ClubbedPrintScreen() {
   const router = useRouter();
   const { data: orders, isLoading } = useOrders();
   const bulkLabelMut = useBulkLabel();
-  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [selected, setSelected] = useState<Set<string>>(new Set());
   const [printType, setPrintType] = useState<PrintType>('both');
 
   const eligible = useMemo(() =>
@@ -61,7 +61,7 @@ export default function ClubbedPrintScreen() {
     [orders]
   );
 
-  const toggle = (id: number) => {
+  const toggle = (id: string) => {
     setSelected(prev => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);

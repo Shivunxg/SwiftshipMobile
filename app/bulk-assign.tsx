@@ -55,7 +55,7 @@ function useCouriersForTenant() {
 }
 
 function OrderRow({ order, selected, onToggle }: {
-  order: Order; selected: boolean; onToggle: (id: number) => void;
+  order: Order; selected: boolean; onToggle: (id: string) => void;
 }) {
   return (
     <TouchableOpacity style={[or.row, selected && or.rowSel]} onPress={() => onToggle(order.id)} activeOpacity={0.75}>
@@ -130,7 +130,7 @@ export default function BulkAssignScreen() {
   const bulkMut = useBulkAssignCourier();
 
   const [step, setStep] = useState<Step>('selectOrders');
-  const [selectedOrders, setSelectedOrders] = useState<Set<number>>(new Set());
+  const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
   const [selectedCourier, setSelectedCourier] = useState<CourierOption | null>(null);
   const [search, setSearch] = useState('');
 
@@ -150,7 +150,7 @@ export default function BulkAssignScreen() {
     );
   }, [eligible, search]);
 
-  const toggleOrder = (id: number) => {
+  const toggleOrder = (id: string) => {
     setSelectedOrders(prev => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);

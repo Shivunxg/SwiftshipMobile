@@ -8,7 +8,7 @@ import type { Order, OrderStatus } from '../lib/types';
 interface Props {
   order: Order;
   onContact: (order: Order) => void;
-  onApprove?: (id: number) => void;
+  onApprove?: (id: string) => void;
   approvePending?: boolean;
 }
 
