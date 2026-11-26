@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../../constants/colors';
-import { useOrders } from '../../hooks/useOrders';
+import { useOrders, useApproveOrder } from '../../hooks/useOrders';
 import { OrderCard } from '../../components/OrderCard';
 import { WhatsAppModal } from '../../components/WhatsAppModal';
 import type { Order } from '../../lib/types';
@@ -58,7 +58,8 @@ function EmptyState({ filter }: { filter: Filter }) {
 }
 
 export default function OrdersScreen() {
-  const { data: orders, isLoading, refetch, isRefetching } = useOrders();
+  const { data: orders, isLoading, isError, refetch, isRefetching } = useOrders();
+  const approveMut = useApproveOrder();
   const [filter, setFilter] = useState<Filter>('All');
   const [search, setSearch] = useState('');
   const [contact, setContact] = useState<Order | null>(null);
@@ -165,11 +166,20 @@ export default function OrdersScreen() {
           <ActivityIndicator color={Colors.accent} size="large" />
           <Text style={{ fontSize: 13, color: Colors.fg2, marginTop: 12 }}>Loading orders...</Text>
         </View>
+      ) : isError ? (
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 }}>
+          <Text style={{ fontSize: 32, marginBottom: 16 }}>⚠️</Text>
+          <Text style={{ fontSize: 17, fontWeight: '700', color: Colors.fg, marginBottom: 8 }}>Could not load orders</Text>
+          <Text style={{ fontSize: 13, color: Colors.fg2, textAlign: 'center', marginBottom: 24 }}>Check your connection and try again</Text>
+          <TouchableOpacity style={{ backgroundColor: Colors.accent, borderRadius: 14, paddingHorizontal: 24, paddingVertical: 12 }} onPress={() => { refetch(); }}>
+            <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>Retry</Text>
+          </TouchableOpacity>
+        </View>
       ) : (
         <FlatList
           data={filtered}
           keyExtractor={o => String(o.id)}
-          renderItem={({ item }) => <OrderCard order={item} onContact={setContact} />}
+          renderItem={({ item }) => <OrderCard order={item} onContact={setContact} onApprove={(id) => approveMut.mutate(id)} approvePending={approveMut.isPending} />}
           onRefresh={() => { refetch(); }}
           refreshing={isRefetching}
           contentContainerStyle={filtered.length === 0 ? { flex: 1 } : { paddingBottom: 24, paddingTop: 4 }}

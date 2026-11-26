@@ -5,7 +5,15 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useAuth } from '../lib/auth-store';
 
-const qc = new QueryClient();
+const qc = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 30_000,   // 30 s — don't refetch on every mount
+      retry: 2,
+      retryDelay: attempt => Math.min(1000 * 2 ** attempt, 10_000),
+    },
+  },
+});
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { token, hydrated, hydrate } = useAuth();

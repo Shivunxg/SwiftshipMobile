@@ -7,7 +7,7 @@ export const useOrders = () => {
   const tenantId = useAuth(s => s.tenantId);
   return useQuery<Order[]>({
     queryKey: ['orders', tenantId],
-    queryFn: () => api.get(`/api/orders/merchant/${tenantId}?_ts=${Date.now()}`).then(r => r.data),
+    queryFn: () => api.get(`/api/orders/merchant/${tenantId}`).then(r => r.data),
     enabled: !!tenantId,
   });
 };
@@ -19,7 +19,7 @@ export const useWallet = (userId: number) =>
   useQuery<Wallet>({ queryKey: ['wallet', userId], queryFn: () => api.get(`/api/wallet/${userId}`).then(r => r.data), enabled: !!userId });
 
 export const usePickups = (tenantId: number) =>
-  useQuery<Pickup[]>({ queryKey: ['pickups', tenantId], queryFn: () => api.get(`/api/pickups/locations/merchant/${tenantId}?_ts=${Date.now()}`).then(r => r.data), enabled: !!tenantId });
+  useQuery<Pickup[]>({ queryKey: ['pickups', tenantId], queryFn: () => api.get(`/api/pickups/locations/merchant/${tenantId}`).then(r => r.data), enabled: !!tenantId });
 
 export const usePayouts = () =>
   useQuery<Payout[]>({ queryKey: ['payouts'], queryFn: () => api.get('/api/payouts/pending').then(r => r.data) });

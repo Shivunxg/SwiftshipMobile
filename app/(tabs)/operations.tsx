@@ -23,8 +23,17 @@ const TAB_ICONS: Record<Tab, string> = {
 
 // ── Business analytics ───────────────────────────────────────────────────────
 function BusinessTab() {
-  const { data: orders, isLoading } = useOrders();
+  const { data: orders, isLoading, isError, refetch } = useOrders();
   if (isLoading) return <ActivityIndicator color={Colors.accent} style={{ marginTop: 60 }} />;
+  if (isError) return (
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 }}>
+      <Text style={{ fontSize: 24, marginBottom: 12 }}>⚠️</Text>
+      <Text style={{ fontSize: 15, fontWeight: '700', color: Colors.fg, marginBottom: 8 }}>Could not load data</Text>
+      <TouchableOpacity style={{ backgroundColor: Colors.accent, borderRadius: 12, paddingHorizontal: 20, paddingVertical: 10 }} onPress={() => refetch()}>
+        <Text style={{ color: '#fff', fontWeight: '700' }}>Retry</Text>
+      </TouchableOpacity>
+    </View>
+  );
 
   const o = orders ?? [];
   const total      = o.length;

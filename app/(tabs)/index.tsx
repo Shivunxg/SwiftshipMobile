@@ -122,8 +122,15 @@ function RecentOrderRow({ order, onPress }: { order: any; onPress: () => void })
 export default function Dashboard() {
   const router = useRouter();
   const { name, userId, walletBalance } = useAuth();
-  const { data: orders, refetch, isRefetching } = useOrders();
+  const { data: orders, refetch, isRefetching, isError: ordersError } = useOrders();
   const { data: wallet } = useWallet(userId);
+
+  // Keep Zustand wallet balance in sync so Account screen stays fresh
+  useEffect(() => {
+    if (wallet?.balance !== undefined) {
+      useAuth.setState({ walletBalance: wallet.balance });
+    }
+  }, [wallet?.balance]);
   const [showBankPrompt, setShowBankPrompt] = useState(false);
 
   useEffect(() => {
@@ -180,6 +187,13 @@ export default function Dashboard() {
             <Text style={s.avatarTxt}>{name[0]?.toUpperCase() ?? '?'}</Text>
           </TouchableOpacity>
         </View>
+
+        {/* API error banner */}
+        {ordersError && (
+          <TouchableOpacity style={s.errorBanner} onPress={() => { refetch(); }} activeOpacity={0.8}>
+            <Text style={s.errorBannerTxt}>Could not load orders — tap to retry</Text>
+          </TouchableOpacity>
+        )}
 
         {/* NDR alert */}
         {counts.ndr > 0 && (
@@ -331,6 +345,9 @@ const s = StyleSheet.create({
   metricVal:      { fontSize: 26, fontWeight: '800', marginBottom: 4 },
   metricLabel:    { fontSize: 11, color: Colors.fg2, fontWeight: '500' },
   metricSub:      { fontSize: 10, color: Colors.fg3, marginTop: 2 },
+
+  errorBanner:    { marginHorizontal: 16, marginBottom: 10, backgroundColor: Colors.errorDim, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: `${Colors.error}30`, alignItems: 'center' },
+  errorBannerTxt: { fontSize: 13, color: Colors.error, fontWeight: '600' },
 
   recentCard:     { marginHorizontal: 16, backgroundColor: Colors.surface, borderRadius: 18, borderWidth: 1, borderColor: Colors.border, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
   recentRow:      { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 13, borderBottomWidth: 1, borderBottomColor: Colors.border },

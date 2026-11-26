@@ -24,7 +24,7 @@ function isoDate(d: Date | null): string {
 export default function WalletScreen() {
   const router = useRouter();
   const { userId } = useAuth();
-  const { data: wallet, isLoading } = useWallet(userId);
+  const { data: wallet, isLoading, isError, refetch } = useWallet(userId);
   const { data: payouts } = usePayouts();
   const { data: orders } = useOrders();
   const releaseMut = useReleasePayoutMutation();
@@ -63,6 +63,16 @@ export default function WalletScreen() {
   );
 
   if (isLoading) return <ActivityIndicator color={Colors.accent} style={{ flex: 1, backgroundColor: Colors.bg }} />;
+  if (isError) return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: Colors.bg, alignItems: 'center', justifyContent: 'center', padding: 32 }}>
+      <Text style={{ fontSize: 32, marginBottom: 16 }}>⚠️</Text>
+      <Text style={{ fontSize: 17, fontWeight: '700', color: Colors.fg, marginBottom: 8 }}>Could not load wallet</Text>
+      <Text style={{ fontSize: 13, color: Colors.fg2, textAlign: 'center', marginBottom: 24 }}>Check your connection and try again</Text>
+      <TouchableOpacity style={{ backgroundColor: Colors.accent, borderRadius: 14, paddingHorizontal: 24, paddingVertical: 12 }} onPress={() => refetch()}>
+        <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>Retry</Text>
+      </TouchableOpacity>
+    </SafeAreaView>
+  );
 
   return (
     <SafeAreaView style={s.safe}>

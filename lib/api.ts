@@ -15,7 +15,8 @@ api.interceptors.response.use(
   (res) => res,
   (err) => {
     if (err.response?.status === 401) {
-      SecureStore.deleteItemAsync('swiftship_token');
+      // Lazy import to avoid circular dependency; clears both SecureStore + Zustand state
+      import('./auth-store').then(({ useAuth }) => useAuth.getState().logout()).catch(() => {});
     }
     return Promise.reject(err);
   }

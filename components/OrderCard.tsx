@@ -3,10 +3,14 @@ import { View, Text, TouchableOpacity, StyleSheet, Linking, Alert } from 'react-
 import { useRouter } from 'expo-router';
 import { Colors } from '../constants/colors';
 import { fmtINR, fmtDate } from '../lib/format';
-import { useApproveOrder } from '../hooks/useOrders';
 import type { Order, OrderStatus } from '../lib/types';
 
-interface Props { order: Order; onContact: (order: Order) => void; }
+interface Props {
+  order: Order;
+  onContact: (order: Order) => void;
+  onApprove?: (id: number) => void;
+  approvePending?: boolean;
+}
 
 const STATUS_META: Record<string, { label: string; color: string }> = {
   ORDER_CREATED:   { label: 'Created',          color: Colors.accent  },
@@ -25,23 +29,25 @@ const STATUS_META: Record<string, { label: string; color: string }> = {
 const getMeta = (status: OrderStatus) =>
   STATUS_META[status] ?? { label: status, color: Colors.fg2 };
 
-export function OrderCard({ order, onContact }: Props) {
-  const router      = useRouter();
-  const approveMut  = useApproveOrder();
-  const meta        = getMeta(order.status);
+export function OrderCard({ order, onContact, onApprove, approvePending }: Props) {
+  const router = useRouter();
+  const meta   = getMeta(order.status);
   const amount      = order.codAmount ?? order.orderValue ?? 0;
   const isCOD       = order.paymentMethod === 'COD';
   const isNDR       = order.status === 'DELIVERY_FAILED' || order.status === 'NDR';
   const isPending   = order.status === 'ORDER_CREATED';
 
-  const handleApprove = () => Alert.alert(
-    'Approve Order',
-    `Approve order ${order.orderNumber}?`,
-    [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Approve', onPress: () => approveMut.mutate(order.id) },
-    ]
-  );
+  const handleApprove = () => {
+    if (!onApprove) return;
+    Alert.alert(
+      'Approve Order',
+      `Approve order ${order.orderNumber}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Approve', onPress: () => onApprove(order.id) },
+      ]
+    );
+  };
 
   const dateStr = (() => {
     const raw = order.createdAt ?? order.placedAt ?? order.date;
@@ -103,11 +109,11 @@ export function OrderCard({ order, onContact }: Props) {
               <TouchableOpacity
                 style={[s.actionBtn, { borderColor: Colors.success, backgroundColor: Colors.successDim }]}
                 onPress={handleApprove}
-                disabled={approveMut.isPending}
+                disabled={approvePending}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
                 <Text style={[s.actionTxt, { color: Colors.success }]}>
-                  {approveMut.isPending ? '...' : 'Approve Order'}
+                  {approvePending ? '...' : 'Approve Order'}
                 </Text>
               </TouchableOpacity>
             ) : (

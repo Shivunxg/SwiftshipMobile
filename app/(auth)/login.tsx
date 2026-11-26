@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  Alert, KeyboardAvoidingView, Platform, ActivityIndicator,
+  KeyboardAvoidingView, Platform, ActivityIndicator,
   Dimensions,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
@@ -16,15 +16,18 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
+  const [error, setError] = useState('');
   const login = useAuth(s => s.login);
 
   const handleLogin = async () => {
-    if (!email || !password) { Alert.alert('Error', 'Enter email and password'); return; }
+    setError('');
+    if (!email.trim()) { setError('Email is required'); return; }
+    if (!password) { setError('Password is required'); return; }
     setLoading(true);
     try {
-      await login(email, password);
+      await login(email.trim(), password);
     } catch (e) {
-      Alert.alert('Login Failed', 'Invalid credentials. Please try again.');
+      setError('Invalid email or password. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -102,6 +105,12 @@ export default function LoginScreen() {
               </View>
             </View>
 
+            {error ? (
+              <View style={s.errorBox}>
+                <Text style={s.errorTxt}>{error}</Text>
+              </View>
+            ) : null}
+
             <TouchableOpacity
               style={[s.loginBtn, loading && { opacity: 0.75 }]}
               onPress={handleLogin}
@@ -150,6 +159,8 @@ const s = StyleSheet.create({
   input:       { flex: 1, height: 50, fontSize: 15, color: Colors.fg },
   eyeBtn:      { fontSize: 16, padding: 4 },
 
+  errorBox:    { backgroundColor: '#FFF1F0', borderRadius: 10, borderWidth: 1, borderColor: '#FECDD3', padding: 12, marginBottom: 12 },
+  errorTxt:    { fontSize: 13, color: Colors.error, fontWeight: '500' },
   loginBtn:    { backgroundColor: Colors.accent, borderRadius: 16, height: 54, alignItems: 'center', justifyContent: 'center', marginTop: 10, marginBottom: 18, shadowColor: Colors.accent, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 6 },
   loginBtnTxt: { color: '#fff', fontSize: 16, fontWeight: '700', letterSpacing: 0.3 },
 
