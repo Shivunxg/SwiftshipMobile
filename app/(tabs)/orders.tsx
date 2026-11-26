@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import {
-  View, Text, FlatList, ScrollView, StyleSheet, ActivityIndicator,
+  View, Text, FlatList, StyleSheet, ActivityIndicator,
   TouchableOpacity, TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -13,6 +13,17 @@ import type { Order } from '../../lib/types';
 type Filter = 'All' | 'New' | 'In Transit' | 'OFD' | 'Delivered' | 'NDR' | 'RTO' | 'COD';
 
 const FILTERS: Filter[] = ['All', 'New', 'In Transit', 'OFD', 'Delivered', 'NDR', 'RTO', 'COD'];
+
+const FILTER_COLORS: Record<Filter, string> = {
+  All:          Colors.fg,
+  New:          Colors.accent,
+  'In Transit': Colors.warning,
+  OFD:          Colors.purple,
+  Delivered:    Colors.success,
+  NDR:          Colors.error,
+  RTO:          Colors.fg2,
+  COD:          '#D97706',
+};
 
 function matchFilter(o: Order, filter: Filter): boolean {
   switch (filter) {
@@ -28,16 +39,17 @@ function matchFilter(o: Order, filter: Filter): boolean {
 }
 
 function EmptyState({ filter }: { filter: Filter }) {
+  const isNDR = filter === 'NDR';
   return (
     <View style={es.wrap}>
-      <View style={es.iconBox}>
-        <Text style={es.iconTxt}>{filter === 'NDR' ? '✓' : '—'}</Text>
+      <View style={[es.iconBox, isNDR && { backgroundColor: Colors.successDim, borderColor: `${Colors.success}30` }]}>
+        <Text style={[es.iconEmoji]}>{isNDR ? '✓' : '📦'}</Text>
       </View>
       <Text style={es.title}>
-        {filter === 'NDR' ? 'No NDR Orders' : `No ${filter === 'All' ? '' : filter + ' '}Orders`}
+        {isNDR ? 'No NDR Orders' : `No ${filter === 'All' ? '' : filter + ' '}Orders`}
       </Text>
       <Text style={es.sub}>
-        {filter === 'NDR'
+        {isNDR
           ? 'All deliveries are running smoothly'
           : 'Pull down to refresh or change the filter'}
       </Text>
@@ -72,22 +84,29 @@ export default function OrdersScreen() {
     ) as Record<Filter, number>;
   }, [orders]);
 
+  const activeColor = FILTER_COLORS[filter] ?? Colors.accent;
+
   return (
     <SafeAreaView style={s.safe}>
       {/* Header */}
       <View style={s.header}>
-        <Text style={s.title}>Orders</Text>
-        <View style={s.totalBadge}>
-          <Text style={s.totalBadgeTxt}>{counts.All} total</Text>
+        <View>
+          <Text style={s.title}>Orders</Text>
+          <Text style={s.subtitle}>{counts.All} shipments total</Text>
         </View>
+        {counts.NDR > 0 && (
+          <View style={s.ndrAlert}>
+            <Text style={s.ndrAlertTxt}>{counts.NDR} NDR</Text>
+          </View>
+        )}
       </View>
 
       {/* Search */}
-      <View style={s.searchWrap}>
-        <Text style={s.searchIcon}>Search</Text>
+      <View style={s.searchBar}>
+        <Text style={s.searchMagnifier}>⌕</Text>
         <TextInput
           style={s.searchInput}
-          placeholder="Search order ID, name, city, AWB..."
+          placeholder="Order ID, customer name, AWB..."
           placeholderTextColor={Colors.fg3}
           value={search}
           onChangeText={setSearch}
@@ -95,56 +114,67 @@ export default function OrdersScreen() {
         />
         {search.length > 0 && (
           <TouchableOpacity onPress={() => setSearch('')} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-            <Text style={s.clearBtn}>✕</Text>
+            <View style={s.clearBtn}><Text style={s.clearBtnTxt}>✕</Text></View>
           </TouchableOpacity>
         )}
       </View>
 
-      {/* Filter chips */}
-      <ScrollView
+      {/* Filter pills - scrollable */}
+      <FlatList
         horizontal
+        data={FILTERS}
+        keyExtractor={f => f}
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={s.chipScroll}
-        style={s.chipBar}
-      >
-        {FILTERS.map(f => {
+        contentContainerStyle={s.pillsRow}
+        style={s.pillsBar}
+        renderItem={({ item: f }) => {
           const active = filter === f;
-          const cnt = counts[f];
+          const cnt    = counts[f];
+          const col    = FILTER_COLORS[f] ?? Colors.accent;
           return (
             <TouchableOpacity
-              key={f}
-              style={[s.chip, active && s.chipOn]}
+              style={[s.pill, active && { backgroundColor: col, borderColor: col }]}
               onPress={() => setFilter(f)}
               activeOpacity={0.7}
             >
-              <Text style={[s.chipTxt, active && s.chipTxtOn]}>{f}</Text>
+              <Text style={[s.pillTxt, active && s.pillTxtOn]}>{f}</Text>
               {cnt > 0 && (
-                <View style={[s.chipBadge, active && s.chipBadgeOn]}>
-                  <Text style={[s.chipBadgeTxt, active && s.chipBadgeTxtOn]}>{cnt}</Text>
+                <View style={[s.pillBadge, active && { backgroundColor: 'rgba(255,255,255,0.3)' }]}>
+                  <Text style={[s.pillBadgeTxt, active && { color: '#fff' }]}>{cnt}</Text>
                 </View>
               )}
             </TouchableOpacity>
           );
-        })}
-      </ScrollView>
+        }}
+      />
+
+      {/* Count strip */}
+      {!isLoading && (
+        <View style={s.countStrip}>
+          <Text style={s.countTxt}>
+            Showing <Text style={{ color: activeColor, fontWeight: '700' }}>{filtered.length}</Text>
+            {filter !== 'All' ? ` ${filter}` : ''} order{filtered.length !== 1 ? 's' : ''}
+            {search ? ` · "${search}"` : ''}
+          </Text>
+        </View>
+      )}
 
       {/* List */}
       {isLoading ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <ActivityIndicator color={Colors.accent} />
+          <ActivityIndicator color={Colors.accent} size="large" />
+          <Text style={{ fontSize: 13, color: Colors.fg2, marginTop: 12 }}>Loading orders...</Text>
         </View>
       ) : (
-        <View style={{ flex: 1 }}>
-          <FlatList
-            data={filtered}
-            keyExtractor={o => String(o.id)}
-            renderItem={({ item }) => <OrderCard order={item} onContact={setContact} />}
-            onRefresh={() => { refetch(); }}
-            refreshing={isRefetching}
-            contentContainerStyle={filtered.length === 0 ? { flex: 1 } : { paddingBottom: 24, paddingTop: 4 }}
-            ListEmptyComponent={<EmptyState filter={filter} />}
-          />
-        </View>
+        <FlatList
+          data={filtered}
+          keyExtractor={o => String(o.id)}
+          renderItem={({ item }) => <OrderCard order={item} onContact={setContact} />}
+          onRefresh={() => { refetch(); }}
+          refreshing={isRefetching}
+          contentContainerStyle={filtered.length === 0 ? { flex: 1 } : { paddingBottom: 24, paddingTop: 4 }}
+          ListEmptyComponent={<EmptyState filter={filter} />}
+        />
       )}
 
       <WhatsAppModal order={contact} onClose={() => setContact(null)} />
@@ -154,30 +184,35 @@ export default function OrdersScreen() {
 
 const es = StyleSheet.create({
   wrap:    { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
-  iconBox: { width: 56, height: 56, borderRadius: 28, backgroundColor: Colors.surface2, alignItems: 'center', justifyContent: 'center', marginBottom: 16, borderWidth: 1, borderColor: Colors.border },
-  iconTxt: { fontSize: 22, fontWeight: '700', color: Colors.fg2 },
-  title:   { fontSize: 17, fontWeight: '700', color: Colors.fg, marginBottom: 8, textAlign: 'center' },
+  iconBox: { width: 70, height: 70, borderRadius: 35, backgroundColor: Colors.surface2, alignItems: 'center', justifyContent: 'center', marginBottom: 18, borderWidth: 1, borderColor: Colors.border },
+  iconEmoji: { fontSize: 28 },
+  title:   { fontSize: 18, fontWeight: '700', color: Colors.fg, marginBottom: 8, textAlign: 'center' },
   sub:     { fontSize: 13, color: Colors.fg2, textAlign: 'center', lineHeight: 20 },
 });
 
 const s = StyleSheet.create({
   safe:          { flex: 1, backgroundColor: Colors.bg },
-  header:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 10, paddingBottom: 8 },
-  title:         { fontSize: 22, fontWeight: '800', color: Colors.fg },
-  totalBadge:    { backgroundColor: Colors.surface, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4, borderWidth: 1, borderColor: Colors.border },
-  totalBadgeTxt: { fontSize: 11, color: Colors.fg2, fontWeight: '600' },
-  searchWrap:    { flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: 16, marginBottom: 10, backgroundColor: Colors.surface, borderRadius: 14, paddingHorizontal: 14, borderWidth: 1, borderColor: Colors.border, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 3, elevation: 1 },
-  searchIcon:    { fontSize: 14, color: Colors.fg3 },
-  searchInput:   { flex: 1, height: 44, fontSize: 13, color: Colors.fg },
-  clearBtn:      { fontSize: 13, color: Colors.fg3, fontWeight: '600' },
-  chipBar:       { flexGrow: 0, flexShrink: 0 },
-  chipScroll:    { paddingHorizontal: 16, gap: 8, paddingBottom: 10, alignItems: 'center' },
-  chip:          { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border },
-  chipOn:        { backgroundColor: Colors.accent, borderColor: Colors.accent },
-  chipTxt:       { fontSize: 12, fontWeight: '600', color: Colors.fg2 },
-  chipTxtOn:     { color: '#fff' },
-  chipBadge:     { backgroundColor: Colors.surface2, borderRadius: 10, paddingHorizontal: 6, paddingVertical: 1 },
-  chipBadgeOn:   { backgroundColor: 'rgba(255,255,255,0.25)' },
-  chipBadgeTxt:  { fontSize: 10, fontWeight: '700', color: Colors.fg2 },
-  chipBadgeTxtOn:{ color: '#fff' },
+
+  header:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 10 },
+  title:         { fontSize: 24, fontWeight: '800', color: Colors.fg, letterSpacing: -0.3 },
+  subtitle:      { fontSize: 12, color: Colors.fg2, marginTop: 2 },
+  ndrAlert:      { backgroundColor: Colors.error, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5 },
+  ndrAlertTxt:   { fontSize: 12, color: '#fff', fontWeight: '700' },
+
+  searchBar:     { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginBottom: 12, backgroundColor: Colors.surface, borderRadius: 16, paddingHorizontal: 14, borderWidth: 1.5, borderColor: Colors.border, gap: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 2 },
+  searchMagnifier: { fontSize: 20, color: Colors.fg3 },
+  searchInput:   { flex: 1, height: 46, fontSize: 14, color: Colors.fg },
+  clearBtn:      { width: 24, height: 24, borderRadius: 12, backgroundColor: Colors.surface2, alignItems: 'center', justifyContent: 'center' },
+  clearBtnTxt:   { fontSize: 11, color: Colors.fg3, fontWeight: '700' },
+
+  pillsBar:      { flexGrow: 0, flexShrink: 0 },
+  pillsRow:      { paddingHorizontal: 16, gap: 8, paddingBottom: 10, alignItems: 'center' },
+  pill:          { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: Colors.surface, borderWidth: 1.5, borderColor: Colors.border },
+  pillTxt:       { fontSize: 12, fontWeight: '600', color: Colors.fg2 },
+  pillTxtOn:     { color: '#fff' },
+  pillBadge:     { backgroundColor: Colors.surface2, borderRadius: 10, paddingHorizontal: 6, paddingVertical: 1 },
+  pillBadgeTxt:  { fontSize: 10, fontWeight: '700', color: Colors.fg2 },
+
+  countStrip:    { paddingHorizontal: 20, paddingBottom: 8 },
+  countTxt:      { fontSize: 12, color: Colors.fg2 },
 });

@@ -10,7 +10,7 @@ import { useOrders, useWallet } from '../../hooks/useOrders';
 import { useAuth } from '../../lib/auth-store';
 import { api } from '../../lib/api';
 import type { OrderStatus } from '../../lib/types';
-import { fmtINR, fmtDateLong } from '../../lib/format';
+import { fmtINR } from '../../lib/format';
 
 const { width: SW } = Dimensions.get('window');
 
@@ -28,22 +28,22 @@ const STATUS_COLOR: Partial<Record<OrderStatus, string>> = {
   RTO_DELIVERED:    Colors.fg2,
   CANCELLED:        Colors.fg3,
 };
+
 const STATUS_LABEL: Partial<Record<OrderStatus, string>> = {
   ORDER_CREATED:    'Created',
-  AWAITING_PICKUP:  'Awaiting',
+  AWAITING_PICKUP:  'Awaiting Pickup',
   PICKED_UP:        'Picked Up',
   IN_TRANSIT:       'In Transit',
-  OUT_FOR_DELIVERY: 'Out for Del.',
+  OUT_FOR_DELIVERY: 'Out for Delivery',
   DELIVERED:        'Delivered',
   DELIVERY_FAILED:  'Failed',
   NDR:              'NDR',
-  RTO_INITIATED:    'RTO Init.',
-  RTO_IN_TRANSIT:   'RTO Transit',
-  RTO_DELIVERED:    'RTO Done',
+  RTO_INITIATED:    'RTO Initiated',
+  RTO_IN_TRANSIT:   'RTO In Transit',
+  RTO_DELIVERED:    'RTO Delivered',
   CANCELLED:        'Cancelled',
 };
 
-// ── Bank prompt modal ─────────────────────────────────────────────────────────
 function BankPromptModal({ visible, onAddBank, onLater }: {
   visible: boolean; onAddBank: () => void; onLater: () => void;
 }) {
@@ -86,66 +86,39 @@ function BankPromptModal({ visible, onAddBank, onLater }: {
   );
 }
 
-const SPARK_W = 110;
-
-// ── Sparkline ─────────────────────────────────────────────────────────────────
-function Sparkline({ values, color }: { values: number[]; color: string }) {
-  const max   = Math.max(...values, 1);
-  const BAR_H = 32;
-  const barW  = Math.max(4, Math.floor((SPARK_W - (values.length - 1) * 3) / values.length));
-  return (
-    <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 3, height: BAR_H, width: SPARK_W }}>
-      {values.map((v, i) => (
-        <View
-          key={i}
-          style={{
-            width: barW,
-            height: Math.max(3, Math.round((v / max) * BAR_H)),
-            borderRadius: 3,
-            backgroundColor: i === values.length - 1 ? color : `${color}44`,
-          }}
-        />
-      ))}
-    </View>
-  );
-}
-
-// ── Stat tile ─────────────────────────────────────────────────────────────────
-function StatTile({ value, label, color, onPress }: {
-  value: number; label: string; color: string; onPress?: () => void;
+function MetricCard({ value, label, color, sublabel, onPress }: {
+  value: string | number; label: string; color: string; sublabel?: string; onPress?: () => void;
 }) {
   return (
-    <TouchableOpacity style={[s.tile, { borderTopColor: color }]} onPress={onPress} activeOpacity={0.75}>
-      <Text style={[s.tileVal, { color }]}>{value}</Text>
-      <Text style={s.tileLbl}>{label}</Text>
+    <TouchableOpacity style={[s.metricCard, { borderTopColor: color, borderTopWidth: 3 }]} onPress={onPress} activeOpacity={0.75}>
+      <Text style={[s.metricVal, { color }]}>{value}</Text>
+      <Text style={s.metricLabel}>{label}</Text>
+      {sublabel ? <Text style={s.metricSub}>{sublabel}</Text> : null}
     </TouchableOpacity>
   );
 }
 
-// ── Recent row ────────────────────────────────────────────────────────────────
-function RecentRow({ order, onPress }: { order: any; onPress: () => void }) {
+function RecentOrderRow({ order, onPress }: { order: any; onPress: () => void }) {
   const color = STATUS_COLOR[order.status as OrderStatus] ?? Colors.fg2;
-  const label = STATUS_LABEL[order.status as OrderStatus] ?? order.status;
+  const label = STATUS_LABEL[order.status as OrderStatus] ?? (order.status ?? '').replace(/_/g, ' ');
+  const amount = order.codAmount ?? order.orderValue ?? 0;
   return (
     <TouchableOpacity style={s.recentRow} onPress={onPress} activeOpacity={0.75}>
-      <View style={[s.recentBar, { backgroundColor: color }]} />
-      <View style={{ flex: 1 }}>
-        <Text style={s.recentId}>{order.orderNumber}</Text>
-        <Text style={s.recentDest} numberOfLines={1}>
-          {order.receiverName}  ·  {order.receiverCity}
-        </Text>
+      <View style={[s.recentDot, { backgroundColor: color }]} />
+      <View style={s.recentInfo}>
+        <Text style={s.recentNum} numberOfLines={1}>#{order.orderNumber}</Text>
+        <Text style={s.recentTo} numberOfLines={1}>{order.receiverName}  ·  {order.receiverCity}</Text>
       </View>
-      <View style={{ alignItems: 'flex-end', gap: 4 }}>
-        <View style={[s.recentBadge, { borderColor: `${color}44`, backgroundColor: `${color}12` }]}>
+      <View style={s.recentRight}>
+        <View style={[s.recentBadge, { backgroundColor: `${color}15`, borderColor: `${color}30` }]}>
           <Text style={[s.recentBadgeTxt, { color }]}>{label}</Text>
         </View>
-        <Text style={s.recentAmt}>₹{order.orderValue ?? order.codAmount ?? 0}</Text>
+        {amount > 0 ? <Text style={s.recentAmt}>₹{fmtINR(amount)}</Text> : null}
       </View>
     </TouchableOpacity>
   );
 }
 
-// ── Dashboard ─────────────────────────────────────────────────────────────────
 export default function Dashboard() {
   const router = useRouter();
   const { name, userId, walletBalance } = useAuth();
@@ -179,9 +152,10 @@ export default function Dashboard() {
   };
   const bal          = wallet?.balance ?? walletBalance;
   const deliveryRate = counts.total > 0 ? Math.round((counts.delivered / counts.total) * 100) : 0;
-  const recent       = o.slice(0, 5);
-  const trend        = [counts.inTransit, counts.new, counts.ofd, counts.delivered, counts.ndr, counts.rto, counts.total];
-  const today        = fmtDateLong(new Date());
+  const recent       = o.slice(0, 6);
+
+  const greeting = getGreeting();
+  const firstName = name.split(' ')[0] ?? name;
 
   return (
     <SafeAreaView style={s.safe}>
@@ -194,72 +168,91 @@ export default function Dashboard() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => { refetch(); }} tintColor={Colors.accent} />}
+        contentContainerStyle={{ paddingBottom: 32 }}
       >
-        {/* Header */}
-        <View style={s.header}>
+        {/* Top header */}
+        <View style={s.topBar}>
           <View>
-            <Text style={s.greeting}>Good {getTimeOfDay()}</Text>
-            <Text style={s.name}>{name}</Text>
+            <Text style={s.greetTxt}>{greeting},</Text>
+            <Text style={s.nameTxt}>{firstName} 👋</Text>
           </View>
-          <View style={s.headerRight}>
-            <Text style={s.dateChip}>{today}</Text>
-            <TouchableOpacity style={s.av} onPress={() => router.push('/account/details')}>
-              <Text style={s.avTxt}>{name[0]?.toUpperCase() ?? '?'}</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Wallet card */}
-        <View style={s.walletCard}>
-          <View style={s.walletLeft}>
-            <Text style={s.walletLbl}>Wallet Balance</Text>
-            <Text style={s.walletBal}>₹{fmtINR(bal)}</Text>
-            <View style={s.rateChip}>
-              <Text style={s.rateChipTxt}>{deliveryRate}% delivery rate</Text>
-            </View>
-          </View>
-          <View style={s.walletRight}>
-            <Sparkline values={trend} color={Colors.success} />
-            <Text style={s.sparkLbl}>7-day activity</Text>
-          </View>
+          <TouchableOpacity style={s.avatar} onPress={() => router.push('/account/details')}>
+            <Text style={s.avatarTxt}>{name[0]?.toUpperCase() ?? '?'}</Text>
+          </TouchableOpacity>
         </View>
 
         {/* NDR alert */}
         {counts.ndr > 0 && (
           <TouchableOpacity style={s.alertBanner} onPress={() => router.push('/(tabs)/orders')} activeOpacity={0.8}>
-            <View style={s.alertDot} />
+            <View style={s.alertIconBox}><Text style={{ fontSize: 16 }}>⚠️</Text></View>
             <View style={{ flex: 1 }}>
               <Text style={s.alertTitle}>{counts.ndr} Delivery {counts.ndr === 1 ? 'Failure' : 'Failures'} Need Attention</Text>
-              <Text style={s.alertSub}>Tap to review NDR orders and re-attempt</Text>
+              <Text style={s.alertSub}>Tap to review NDR orders and re-attempt delivery</Text>
             </View>
             <Text style={s.alertChev}>›</Text>
           </TouchableOpacity>
         )}
 
-        {/* Stats */}
-        <Text style={s.sectionHead}>Shipment Overview</Text>
-        <View style={s.tileGrid}>
-          <StatTile value={counts.new}       label="New"        color={Colors.accent}  onPress={() => router.push('/(tabs)/orders')} />
-          <StatTile value={counts.inTransit} label="In Transit" color={Colors.warning} onPress={() => router.push('/(tabs)/orders')} />
-          <StatTile value={counts.ofd}       label="Out for Del." color={Colors.purple} onPress={() => router.push('/(tabs)/orders')} />
-          <StatTile value={counts.delivered} label="Delivered"  color={Colors.success} onPress={() => router.push('/(tabs)/orders')} />
-          <StatTile value={counts.ndr}       label="NDR"        color={Colors.error}   onPress={() => router.push('/(tabs)/orders')} />
-          <StatTile value={counts.rto}       label="RTO"        color={Colors.fg2}     onPress={() => router.push('/(tabs)/orders')} />
+        {/* Wallet + delivery card */}
+        <View style={s.heroCard}>
+          <View style={s.heroTop}>
+            <View>
+              <Text style={s.heroLbl}>Wallet Balance</Text>
+              <Text style={s.heroBal}>₹{fmtINR(bal)}</Text>
+            </View>
+            <View style={s.heroRateBox}>
+              <Text style={s.heroRateNum}>{deliveryRate}%</Text>
+              <Text style={s.heroRateLbl}>Delivery Rate</Text>
+            </View>
+          </View>
+          <View style={s.heroStatsRow}>
+            <View style={s.heroStat}>
+              <Text style={s.heroStatNum}>{counts.total}</Text>
+              <Text style={s.heroStatLbl}>Total</Text>
+            </View>
+            <View style={s.heroStatDivider} />
+            <View style={s.heroStat}>
+              <Text style={[s.heroStatNum, { color: Colors.warning }]}>{counts.inTransit}</Text>
+              <Text style={s.heroStatLbl}>In Transit</Text>
+            </View>
+            <View style={s.heroStatDivider} />
+            <View style={s.heroStat}>
+              <Text style={[s.heroStatNum, { color: Colors.success }]}>{counts.delivered}</Text>
+              <Text style={s.heroStatLbl}>Delivered</Text>
+            </View>
+            <View style={s.heroStatDivider} />
+            <View style={s.heroStat}>
+              <Text style={[s.heroStatNum, { color: Colors.error }]}>{counts.ndr}</Text>
+              <Text style={s.heroStatLbl}>NDR</Text>
+            </View>
+          </View>
         </View>
 
         {/* Quick actions */}
-        <Text style={s.sectionHead}>Quick Actions</Text>
-        <View style={s.qaRow}>
-          <TouchableOpacity style={s.qaPrimary} activeOpacity={0.85} onPress={() => router.push('/create-shipment')}>
-            <Text style={s.qaPrimaryTxt}>+ Create Shipment</Text>
+        <View style={s.qaBtns}>
+          <TouchableOpacity style={s.qaPrimBtn} onPress={() => router.push('/create-shipment')} activeOpacity={0.85}>
+            <Text style={s.qaPrimTxt}>+ New Shipment</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={s.qaSecondary} onPress={() => router.push('/(tabs)/orders')}>
-            <Text style={s.qaSecTxt}>Orders</Text>
+          <TouchableOpacity style={s.qaSecBtn} onPress={() => router.push('/(tabs)/orders')} activeOpacity={0.85}>
+            <Text style={s.qaSecTxt}>All Orders</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={s.qaSecondary} onPress={() => router.push('/manage-couriers')}>
+          <TouchableOpacity style={s.qaSecBtn} onPress={() => router.push('/manage-couriers')} activeOpacity={0.85}>
             <Text style={s.qaSecTxt}>Couriers</Text>
           </TouchableOpacity>
         </View>
+
+        {/* Status metrics grid */}
+        <View style={s.sectionRow}>
+          <Text style={s.sectionHead}>Shipment Overview</Text>
+        </View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.metricsScroll}>
+          <MetricCard value={counts.new}       label="New Orders"    color={Colors.accent}  onPress={() => router.push('/(tabs)/orders')} />
+          <MetricCard value={counts.inTransit} label="In Transit"    color={Colors.warning} onPress={() => router.push('/(tabs)/orders')} />
+          <MetricCard value={counts.ofd}       label="Out for Del."  color={Colors.purple}  onPress={() => router.push('/(tabs)/orders')} />
+          <MetricCard value={counts.delivered} label="Delivered"     color={Colors.success} onPress={() => router.push('/(tabs)/orders')} />
+          <MetricCard value={counts.ndr}       label="NDR / Failed"  color={Colors.error}   onPress={() => router.push('/(tabs)/orders')} />
+          <MetricCard value={counts.rto}       label="RTO"           color={Colors.fg2}     onPress={() => router.push('/(tabs)/orders')} />
+        </ScrollView>
 
         {/* Recent orders */}
         {recent.length > 0 && (
@@ -267,85 +260,93 @@ export default function Dashboard() {
             <View style={s.sectionRow}>
               <Text style={s.sectionHead}>Recent Orders</Text>
               <TouchableOpacity onPress={() => router.push('/(tabs)/orders')}>
-                <Text style={s.seeAll}>See All</Text>
+                <Text style={s.seeAll}>See all →</Text>
               </TouchableOpacity>
             </View>
             <View style={s.recentCard}>
               {recent.map(order => (
-                <RecentRow key={order.id} order={order} onPress={() => router.push(`/order/${order.id}`)} />
+                <RecentOrderRow
+                  key={order.id}
+                  order={order}
+                  onPress={() => router.push(`/order/${order.id}`)}
+                />
               ))}
             </View>
           </>
         )}
-
-        <View style={{ height: 24 }} />
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-function getTimeOfDay() {
+function getGreeting() {
   const h = new Date().getHours();
-  if (h < 12) return 'morning';
-  if (h < 17) return 'afternoon';
-  return 'evening';
+  if (h < 12) return 'Good morning';
+  if (h < 17) return 'Good afternoon';
+  return 'Good evening';
 }
 
-const TILE_W = (SW - 48) / 3;
+const METRIC_W = 120;
 
 const s = StyleSheet.create({
   safe:           { flex: 1, backgroundColor: Colors.bg },
-  header:         { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingTop: 10, paddingBottom: 14 },
-  greeting:       { fontSize: 12, color: Colors.fg2, marginBottom: 2 },
-  name:           { fontSize: 20, fontWeight: '700', color: Colors.fg },
-  headerRight:    { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  dateChip:       { fontSize: 11, color: Colors.fg2, backgroundColor: Colors.surface, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20, borderWidth: 1, borderColor: Colors.border },
-  av:             { width: 38, height: 38, borderRadius: 19, backgroundColor: Colors.accent, alignItems: 'center', justifyContent: 'center' },
-  avTxt:          { color: '#fff', fontWeight: '800', fontSize: 15 },
 
-  walletCard:     { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginBottom: 12, backgroundColor: Colors.accent, borderRadius: 20, padding: 18, gap: 16 },
-  walletLeft:     { flex: 1 },
-  walletLbl:      { fontSize: 11, color: 'rgba(255,255,255,0.65)', marginBottom: 6 },
-  walletBal:      { fontSize: 28, fontWeight: '800', color: '#fff', marginBottom: 10 },
-  rateChip:       { alignSelf: 'flex-start', backgroundColor: 'rgba(255,255,255,0.18)', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
-  rateChipTxt:    { fontSize: 11, fontWeight: '600', color: '#fff' },
-  walletRight:    { width: 120, alignItems: 'flex-end', gap: 6 },
-  sparkLbl:       { fontSize: 10, color: 'rgba(255,255,255,0.5)' },
+  topBar:         { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 16 },
+  greetTxt:       { fontSize: 13, color: Colors.fg2, marginBottom: 2 },
+  nameTxt:        { fontSize: 22, fontWeight: '800', color: Colors.fg },
+  avatar:         { width: 42, height: 42, borderRadius: 21, backgroundColor: Colors.accent, alignItems: 'center', justifyContent: 'center', shadowColor: Colors.accent, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 6 },
+  avatarTxt:      { color: '#fff', fontWeight: '800', fontSize: 17 },
 
-  alertBanner:    { flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: 16, marginBottom: 12, backgroundColor: '#FFF5F5', borderRadius: 14, padding: 14, borderWidth: 1, borderColor: '#FECACa' },
-  alertDot:       { width: 8, height: 8, borderRadius: 4, backgroundColor: Colors.error },
-  alertTitle:     { fontSize: 13, fontWeight: '600', color: Colors.error, marginBottom: 2 },
+  alertBanner:    { flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: 16, marginBottom: 14, backgroundColor: '#FFF5F5', borderRadius: 16, padding: 14, borderWidth: 1, borderColor: '#FECaCa' },
+  alertIconBox:   { width: 36, height: 36, borderRadius: 10, backgroundColor: Colors.errorDim, alignItems: 'center', justifyContent: 'center' },
+  alertTitle:     { fontSize: 13, fontWeight: '700', color: Colors.error, marginBottom: 2 },
   alertSub:       { fontSize: 11, color: Colors.fg2 },
-  alertChev:      { fontSize: 20, color: Colors.error },
+  alertChev:      { fontSize: 22, color: Colors.error },
 
-  sectionHead:    { fontSize: 11, fontWeight: '700', color: Colors.fg2, textTransform: 'uppercase', letterSpacing: 0.7, marginHorizontal: 16, marginBottom: 10, marginTop: 6 },
-  sectionRow:     { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingRight: 16 },
-  seeAll:         { fontSize: 12, color: Colors.accent, fontWeight: '600' },
+  heroCard:       { marginHorizontal: 16, marginBottom: 16, backgroundColor: '#1A2744', borderRadius: 22, padding: 20, shadowColor: '#1A2744', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.25, shadowRadius: 16, elevation: 8 },
+  heroTop:        { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 },
+  heroLbl:        { fontSize: 12, color: 'rgba(255,255,255,0.5)', marginBottom: 6 },
+  heroBal:        { fontSize: 30, fontWeight: '800', color: '#fff' },
+  heroRateBox:    { backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 14, padding: 12, alignItems: 'center' },
+  heroRateNum:    { fontSize: 20, fontWeight: '800', color: '#fff', marginBottom: 2 },
+  heroRateLbl:    { fontSize: 10, color: 'rgba(255,255,255,0.5)' },
+  heroStatsRow:   { flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 14, padding: 14 },
+  heroStat:       { flex: 1, alignItems: 'center' },
+  heroStatNum:    { fontSize: 18, fontWeight: '800', color: '#fff', marginBottom: 3 },
+  heroStatLbl:    { fontSize: 10, color: 'rgba(255,255,255,0.5)' },
+  heroStatDivider:{ width: 1, backgroundColor: 'rgba(255,255,255,0.12)' },
 
-  tileGrid:       { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 16, marginBottom: 10 },
-  tile:           { width: TILE_W, backgroundColor: Colors.surface, borderRadius: 14, padding: 14, borderTopWidth: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
-  tileVal:        { fontSize: 24, fontWeight: '800', marginBottom: 4 },
-  tileLbl:        { fontSize: 11, color: Colors.fg2, fontWeight: '500' },
+  qaBtns:         { flexDirection: 'row', gap: 8, paddingHorizontal: 16, marginBottom: 20 },
+  qaPrimBtn:      { flex: 2, backgroundColor: Colors.accent, borderRadius: 16, padding: 14, alignItems: 'center', shadowColor: Colors.accent, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.25, shadowRadius: 8, elevation: 4 },
+  qaPrimTxt:      { color: '#fff', fontSize: 14, fontWeight: '700' },
+  qaSecBtn:       { flex: 1, backgroundColor: Colors.surface, borderRadius: 16, padding: 14, alignItems: 'center', borderWidth: 1, borderColor: Colors.border },
+  qaSecTxt:       { fontSize: 13, color: Colors.fg2, fontWeight: '600' },
 
-  qaRow:          { flexDirection: 'row', gap: 8, paddingHorizontal: 16, marginBottom: 10 },
-  qaPrimary:      { flex: 2, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.accent, borderRadius: 14, padding: 14 },
-  qaPrimaryTxt:   { color: '#fff', fontSize: 13, fontWeight: '700' },
-  qaSecondary:    { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.surface, borderRadius: 14, padding: 12, borderWidth: 1, borderColor: Colors.border },
-  qaSecTxt:       { fontSize: 12, color: Colors.fg2, fontWeight: '600' },
+  sectionHead:    { fontSize: 13, fontWeight: '700', color: Colors.fg, letterSpacing: -0.1 },
+  sectionRow:     { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginBottom: 12 },
+  seeAll:         { fontSize: 13, color: Colors.accent, fontWeight: '600' },
 
-  recentCard:     { marginHorizontal: 16, backgroundColor: Colors.surface, borderRadius: 16, borderWidth: 1, borderColor: Colors.border, overflow: 'hidden', marginBottom: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 1 },
-  recentRow:      { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderBottomWidth: 1, borderBottomColor: Colors.border },
-  recentBar:      { width: 3, height: 40, borderRadius: 2 },
-  recentId:       { fontSize: 12, fontWeight: '700', color: Colors.fg, marginBottom: 3 },
-  recentDest:     { fontSize: 11, color: Colors.fg2 },
+  metricsScroll:  { paddingHorizontal: 16, gap: 10, paddingBottom: 4 },
+  metricCard:     { width: METRIC_W, backgroundColor: Colors.surface, borderRadius: 16, padding: 14, borderWidth: 1, borderColor: Colors.border, marginBottom: 16 },
+  metricVal:      { fontSize: 26, fontWeight: '800', marginBottom: 4 },
+  metricLabel:    { fontSize: 11, color: Colors.fg2, fontWeight: '500' },
+  metricSub:      { fontSize: 10, color: Colors.fg3, marginTop: 2 },
+
+  recentCard:     { marginHorizontal: 16, backgroundColor: Colors.surface, borderRadius: 18, borderWidth: 1, borderColor: Colors.border, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
+  recentRow:      { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 13, borderBottomWidth: 1, borderBottomColor: Colors.border },
+  recentDot:      { width: 4, height: 42, borderRadius: 2 },
+  recentInfo:     { flex: 1 },
+  recentNum:      { fontSize: 13, fontWeight: '700', color: Colors.fg, marginBottom: 3 },
+  recentTo:       { fontSize: 11, color: Colors.fg2 },
+  recentRight:    { alignItems: 'flex-end', gap: 5 },
   recentBadge:    { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20, borderWidth: 1 },
   recentBadgeTxt: { fontSize: 10, fontWeight: '700' },
-  recentAmt:      { fontSize: 12, fontWeight: '600', color: Colors.fg },
+  recentAmt:      { fontSize: 12, fontWeight: '700', color: Colors.fg },
 });
 
 const bs = StyleSheet.create({
   overlay:        { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center', padding: 24 },
-  card:           { width: '100%', backgroundColor: '#fff', borderRadius: 24, padding: 28, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.15, shadowRadius: 24, elevation: 20 },
+  card:           { width: '100%', backgroundColor: '#fff', borderRadius: 24, padding: 28, alignItems: 'center' },
   iconCircle:     { width: 70, height: 70, borderRadius: 35, backgroundColor: '#FFF3CD', borderWidth: 2, borderColor: '#FFC107', alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
   iconTxt:        { fontSize: 32, fontWeight: '900', color: '#D97706' },
   title:          { fontSize: 20, fontWeight: '800', color: '#0D0D1A', textAlign: 'center', marginBottom: 12 },

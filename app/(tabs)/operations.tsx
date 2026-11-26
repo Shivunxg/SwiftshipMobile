@@ -14,7 +14,14 @@ import type { Order } from '../../lib/types';
 type Tab = 'Business' | 'COD' | 'NDR' | 'RTO';
 const TABS: Tab[] = ['Business', 'COD', 'NDR', 'RTO'];
 
-// ── Business analytics tab ───────────────────────────────────────────────────
+const TAB_ICONS: Record<Tab, string> = {
+  Business: '📊',
+  COD:      '💸',
+  NDR:      '⚠️',
+  RTO:      '↩️',
+};
+
+// ── Business analytics ───────────────────────────────────────────────────────
 function BusinessTab() {
   const { data: orders, isLoading } = useOrders();
   if (isLoading) return <ActivityIndicator color={Colors.accent} style={{ marginTop: 60 }} />;
@@ -28,116 +35,100 @@ function BusinessTab() {
   const rto        = o.filter(x => x.status?.startsWith('RTO') ?? false).length;
   const cod        = o.filter(x => x.paymentMethod === 'COD').length;
   const prepaid    = o.filter(x => x.paymentMethod === 'ONLINE').length;
-  const ndrResolved = o.filter(x => x.status === 'DELIVERED' && (x.ndrDate != null)).length;
 
   const delivRate  = total > 0 ? Math.round((delivered / total) * 100) : 0;
   const ndrRate    = total > 0 ? Math.round((ndr / total) * 100) : 0;
   const rtoRate    = total > 0 ? Math.round((rto / total) * 100) : 0;
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
-      {/* NDR Summary card */}
-      <View style={bs.headerCard}>
-        <Text style={bs.headerCardTitle}>NDR Overview</Text>
-        <Text style={bs.headerCardSub}>Last 30 days</Text>
+    <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 32 }} showsVerticalScrollIndicator={false}>
+
+      {/* NDR overview card */}
+      <View style={bs.ndrCard}>
+        <View style={bs.ndrCardHeader}>
+          <Text style={bs.ndrCardTitle}>NDR Overview</Text>
+          <Text style={bs.ndrCardSub}>Last 30 days</Text>
+        </View>
         <View style={bs.ndrGrid}>
-          <NDRStat label="Total NDR Raised"      value={ndr}         color={Colors.error}   />
-          <NDRStat label="Action Taken"          value={ndrResolved} color={Colors.success} />
-          <NDRStat label="Pending for Action"    value={Math.max(0, ndr - ndrResolved)} color={Colors.warning} />
-          <NDRStat label="NDR Delivered"         value={ndrResolved} color={Colors.purple}  />
+          {[
+            { label: 'Total NDR', value: ndr,  color: Colors.error },
+            { label: 'Pending',   value: ndr,  color: Colors.warning },
+            { label: 'Delivered', value: 0,    color: Colors.success },
+            { label: 'RTO',       value: rto,  color: Colors.fg2 },
+          ].map(item => (
+            <View key={item.label} style={bs.ndrItem}>
+              <Text style={[bs.ndrItemVal, { color: item.color }]}>{item.value}</Text>
+              <Text style={bs.ndrItemLbl}>{item.label}</Text>
+            </View>
+          ))}
         </View>
       </View>
 
-      {/* Shipment overview */}
-      <Text style={bs.sectionTitle}>Shipment Overview</Text>
-      <View style={bs.statsGrid}>
-        <StatBox label="Total Orders"  value={total}      color={Colors.accent}  />
-        <StatBox label="Delivered"     value={delivered}  color={Colors.success} />
-        <StatBox label="In Transit"    value={inTransit}  color={Colors.warning} />
-        <StatBox label="Out for Del."  value={ofd}        color={Colors.purple}  />
-        <StatBox label="NDR"           value={ndr}        color={Colors.error}   />
-        <StatBox label="RTO"           value={rto}        color={Colors.fg2}     />
+      {/* Key metrics row */}
+      <View style={bs.metricsRow}>
+        {[
+          { label: 'Total Orders', value: total,     color: Colors.accent },
+          { label: 'Delivered',    value: delivered, color: Colors.success },
+          { label: 'In Transit',   value: inTransit, color: Colors.warning },
+        ].map(m => (
+          <View key={m.label} style={[bs.metricBox, { borderTopColor: m.color }]}>
+            <Text style={[bs.metricVal, { color: m.color }]}>{m.value}</Text>
+            <Text style={bs.metricLbl}>{m.label}</Text>
+          </View>
+        ))}
+      </View>
+      <View style={bs.metricsRow}>
+        {[
+          { label: 'Out for Del.', value: ofd,  color: Colors.purple },
+          { label: 'NDR / Failed', value: ndr,  color: Colors.error },
+          { label: 'RTO',          value: rto,  color: Colors.fg2 },
+        ].map(m => (
+          <View key={m.label} style={[bs.metricBox, { borderTopColor: m.color }]}>
+            <Text style={[bs.metricVal, { color: m.color }]}>{m.value}</Text>
+            <Text style={bs.metricLbl}>{m.label}</Text>
+          </View>
+        ))}
       </View>
 
-      {/* Performance metrics */}
+      {/* Performance */}
       <Text style={bs.sectionTitle}>Performance</Text>
-      <View style={bs.metricsCard}>
-        <MetricRow label="Delivery Rate"  value={`${delivRate}%`} color={Colors.success} pct={delivRate} />
-        <MetricRow label="NDR Rate"       value={`${ndrRate}%`}   color={Colors.error}   pct={ndrRate} />
-        <MetricRow label="RTO Rate"       value={`${rtoRate}%`}   color={Colors.warning} pct={rtoRate} />
+      <View style={bs.perfCard}>
+        {[
+          { label: 'Delivery Rate', value: delivRate, color: Colors.success },
+          { label: 'NDR Rate',      value: ndrRate,   color: Colors.error },
+          { label: 'RTO Rate',      value: rtoRate,   color: Colors.warning },
+        ].map(m => (
+          <View key={m.label} style={bs.perfRow}>
+            <Text style={bs.perfLbl}>{m.label}</Text>
+            <View style={bs.perfTrack}>
+              <View style={[bs.perfFill, { width: `${Math.min(m.value, 100)}%`, backgroundColor: m.color }]} />
+            </View>
+            <Text style={[bs.perfVal, { color: m.color }]}>{m.value}%</Text>
+          </View>
+        ))}
       </View>
 
       {/* Payment split */}
       <Text style={bs.sectionTitle}>Payment Mode</Text>
       <View style={bs.splitCard}>
-        <View style={bs.splitRow}>
-          <View style={[bs.splitBar, { flex: prepaid || 1, backgroundColor: Colors.accent }]} />
-          <View style={[bs.splitBar, { flex: cod || 0.001, backgroundColor: Colors.warning }]} />
+        <View style={bs.splitBarRow}>
+          <View style={[bs.splitSegment, { flex: prepaid || 0.001, backgroundColor: Colors.accent }]} />
+          <View style={[bs.splitSegment, { flex: cod || 0.001, backgroundColor: Colors.warning }]} />
         </View>
         <View style={bs.splitLegend}>
-          <View style={bs.splitItem}>
-            <View style={[bs.legendDot, { backgroundColor: Colors.accent }]} />
-            <Text style={bs.splitLbl}>Prepaid</Text>
-            <Text style={bs.splitVal}>{prepaid}</Text>
-          </View>
-          <View style={bs.splitItem}>
-            <View style={[bs.legendDot, { backgroundColor: Colors.warning }]} />
-            <Text style={bs.splitLbl}>COD</Text>
-            <Text style={bs.splitVal}>{cod}</Text>
-          </View>
+          {[
+            { label: 'Prepaid', count: prepaid, color: Colors.accent },
+            { label: 'COD',     count: cod,     color: Colors.warning },
+          ].map(item => (
+            <View key={item.label} style={bs.legendItem}>
+              <View style={[bs.legendDot, { backgroundColor: item.color }]} />
+              <Text style={bs.legendLbl}>{item.label}</Text>
+              <Text style={[bs.legendCount, { color: item.color }]}>{item.count}</Text>
+            </View>
+          ))}
         </View>
       </View>
-
-      {/* Shipping mode */}
-      <Text style={bs.sectionTitle}>Shipment Split by Shipping Mode</Text>
-      <View style={bs.modeCard}>
-        {[
-          { label: 'Surface', count: o.filter(x => x.serviceType === 'SURFACE').length, color: Colors.accent },
-          { label: 'Air',     count: o.filter(x => x.serviceType === 'AIR').length,     color: Colors.purple },
-          { label: 'Other',   count: o.filter(x => !x.serviceType || (x.serviceType !== 'SURFACE' && x.serviceType !== 'AIR')).length, color: Colors.fg2 },
-        ].map(m => (
-          <View key={m.label} style={bs.modeRow}>
-            <View style={[bs.modeDot, { backgroundColor: m.color }]} />
-            <Text style={bs.modeLbl}>{m.label}</Text>
-            <View style={bs.modeBarWrap}>
-              <View style={[bs.modeBarFill, { flex: m.count || 0.001, backgroundColor: m.color }]} />
-              <View style={{ flex: total - m.count || 0.001 }} />
-            </View>
-            <Text style={bs.modeCount}>{m.count}</Text>
-          </View>
-        ))}
-      </View>
     </ScrollView>
-  );
-}
-
-function NDRStat({ label, value, color }: { label: string; value: number; color: string }) {
-  return (
-    <View style={bs.ndrStat}>
-      <Text style={[bs.ndrVal, { color }]}>{value}</Text>
-      <Text style={bs.ndrLbl}>{label}</Text>
-    </View>
-  );
-}
-
-function StatBox({ label, value, color }: { label: string; value: number; color: string }) {
-  return (
-    <View style={[bs.statBox, { borderTopColor: color }]}>
-      <Text style={[bs.statVal, { color }]}>{value}</Text>
-      <Text style={bs.statLbl}>{label}</Text>
-    </View>
-  );
-}
-
-function MetricRow({ label, value, color, pct }: { label: string; value: string; color: string; pct: number }) {
-  return (
-    <View style={bs.metricRow}>
-      <Text style={bs.metricLbl}>{label}</Text>
-      <View style={bs.metricBarTrack}>
-        <View style={[bs.metricBarFill, { width: `${Math.min(pct, 100)}%`, backgroundColor: color }]} />
-      </View>
-      <Text style={[bs.metricVal, { color }]}>{value}</Text>
-    </View>
   );
 }
 
@@ -150,7 +141,8 @@ function CODList({ onContact }: { onContact: (o: Order) => void }) {
       data={orders}
       keyExtractor={o => String(o.id)}
       contentContainerStyle={{ padding: 16, gap: 10 }}
-      ListEmptyComponent={<EmptyState label="No COD Orders" />}
+      showsVerticalScrollIndicator={false}
+      ListEmptyComponent={<EmptyState label="No COD Orders" icon="💸" />}
       renderItem={({ item: o }) => (
         <View style={s.card}>
           <View style={s.cardTop}>
@@ -193,7 +185,8 @@ function NDRList({ onContact }: { onContact: (o: Order) => void }) {
       data={orders}
       keyExtractor={o => String(o.id)}
       contentContainerStyle={{ padding: 16, gap: 10 }}
-      ListEmptyComponent={<EmptyState label="No NDR Orders" />}
+      showsVerticalScrollIndicator={false}
+      ListEmptyComponent={<EmptyState label="No NDR Orders" icon="✅" />}
       renderItem={({ item: o }) => (
         <View style={[s.card, { borderLeftWidth: 3, borderLeftColor: Colors.error }]}>
           <View style={s.cardTop}>
@@ -235,7 +228,8 @@ function RTOList() {
       data={orders}
       keyExtractor={o => String(o.id)}
       contentContainerStyle={{ padding: 16, gap: 10 }}
-      ListEmptyComponent={<EmptyState label="No RTO Orders" />}
+      showsVerticalScrollIndicator={false}
+      ListEmptyComponent={<EmptyState label="No RTO Orders" icon="↩️" />}
       renderItem={({ item: o }) => (
         <View style={[s.card, { borderLeftWidth: 3, borderLeftColor: Colors.fg2 }]}>
           <View style={s.cardTop}>
@@ -251,7 +245,7 @@ function RTOList() {
               <Text style={s.metaVal}>{o.rtoReason ?? 'Not specified'}</Text>
             </View>
           </View>
-          {o.status === 'ORDER_CREATED' || o.status === 'IN_TRANSIT' ? (
+          {(o.status === 'ORDER_CREATED' || o.status === 'IN_TRANSIT') && (
             <View style={s.btnRow}>
               <TouchableOpacity
                 style={[s.btn, { backgroundColor: Colors.errorDim }]}
@@ -263,21 +257,21 @@ function RTOList() {
                 <Text style={{ color: Colors.error, fontWeight: '600', fontSize: 12 }}>Initiate RTO</Text>
               </TouchableOpacity>
             </View>
-          ) : null}
+          )}
         </View>
       )}
     />
   );
 }
 
-function EmptyState({ label }: { label: string }) {
+function EmptyState({ label, icon }: { label: string; icon: string }) {
   return (
-    <View style={{ alignItems: 'center', paddingTop: 60 }}>
-      <View style={{ width: 50, height: 50, borderRadius: 25, backgroundColor: Colors.surface2, alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
-        <Text style={{ fontSize: 20, color: Colors.fg2 }}>—</Text>
+    <View style={{ alignItems: 'center', paddingTop: 60, paddingHorizontal: 24 }}>
+      <View style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: Colors.surface2, alignItems: 'center', justifyContent: 'center', marginBottom: 14, borderWidth: 1, borderColor: Colors.border }}>
+        <Text style={{ fontSize: 24 }}>{icon}</Text>
       </View>
-      <Text style={{ fontSize: 15, fontWeight: '600', color: Colors.fg }}>{label}</Text>
-      <Text style={{ fontSize: 12, color: Colors.fg2, marginTop: 4 }}>Nothing to show here</Text>
+      <Text style={{ fontSize: 16, fontWeight: '700', color: Colors.fg, marginBottom: 6 }}>{label}</Text>
+      <Text style={{ fontSize: 12, color: Colors.fg2, textAlign: 'center' }}>Nothing to show here right now</Text>
     </View>
   );
 }
@@ -291,33 +285,39 @@ export default function OperationsScreen() {
   return (
     <SafeAreaView style={s.safe}>
       <View style={s.header}>
-        <Text style={s.title}>Operations</Text>
+        <View>
+          <Text style={s.title}>Operations</Text>
+          <Text style={s.subtitle}>Monitor & manage your shipments</Text>
+        </View>
       </View>
 
-      {/* Quick actions */}
+      {/* Quick action chips */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.qaScroll}>
         {[
-          { label: 'Bulk Assign', icon: '⚡', path: '/bulk-assign' },
-          { label: 'Print Labels', icon: '🖨', path: '/clubbed-print' },
-          { label: 'Weight Issues', icon: '⚖', path: '/weight-discrepancy' },
+          { label: 'Bulk Assign',   icon: '⚡', path: '/bulk-assign' },
+          { label: 'Print Labels',  icon: '🖨',  path: '/clubbed-print' },
+          { label: 'Weight Issues', icon: '⚖️', path: '/weight-discrepancy' },
         ].map(item => (
           <TouchableOpacity key={item.label} style={s.qaChip} onPress={() => router.push(item.path as any)} activeOpacity={0.75}>
-            <Text style={s.qaIcon}>{item.icon}</Text>
-            <Text style={s.qaLabel}>{item.label}</Text>
+            <Text style={s.qaChipIcon}>{item.icon}</Text>
+            <Text style={s.qaChipLbl}>{item.label}</Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
 
-      {/* Tab bar */}
+      {/* Tab selector */}
       <View style={s.tabBar}>
-        {TABS.map(t => (
-          <TouchableOpacity key={t} style={[s.tabItem, tab === t && s.tabItemOn]} onPress={() => setTab(t)}>
-            <Text style={[s.tabTxt, tab === t && s.tabTxtOn]}>{t}</Text>
-          </TouchableOpacity>
-        ))}
+        {TABS.map(t => {
+          const active = tab === t;
+          return (
+            <TouchableOpacity key={t} style={[s.tabItem, active && s.tabItemOn]} onPress={() => setTab(t)} activeOpacity={0.75}>
+              <Text style={s.tabItemIcon}>{TAB_ICONS[t]}</Text>
+              <Text style={[s.tabTxt, active && s.tabTxtOn]}>{t}</Text>
+            </TouchableOpacity>
+          );
+        })}
       </View>
 
-      {/* Content */}
       <View style={{ flex: 1 }}>
         {tab === 'Business' && <BusinessTab />}
         {tab === 'COD' && <CODList onContact={setContact} />}
@@ -331,69 +331,67 @@ export default function OperationsScreen() {
 }
 
 const bs = StyleSheet.create({
-  headerCard:     { backgroundColor: Colors.accent, borderRadius: 18, padding: 18, marginBottom: 16 },
-  headerCardTitle:{ fontSize: 16, fontWeight: '700', color: '#fff', marginBottom: 2 },
-  headerCardSub:  { fontSize: 11, color: 'rgba(255,255,255,0.6)', marginBottom: 16 },
-  ndrGrid:        { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  ndrStat:        { flex: 1, minWidth: '45%', backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 12, padding: 12 },
-  ndrVal:         { fontSize: 24, fontWeight: '800', color: '#fff', marginBottom: 4 },
-  ndrLbl:         { fontSize: 11, color: 'rgba(255,255,255,0.75)', lineHeight: 15 },
+  ndrCard:       { backgroundColor: Colors.error, borderRadius: 20, padding: 18, marginBottom: 16 },
+  ndrCardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  ndrCardTitle:  { fontSize: 16, fontWeight: '700', color: '#fff' },
+  ndrCardSub:    { fontSize: 11, color: 'rgba(255,255,255,0.6)' },
+  ndrGrid:       { flexDirection: 'row', gap: 10 },
+  ndrItem:       { flex: 1, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 12, padding: 12, alignItems: 'center' },
+  ndrItemVal:    { fontSize: 22, fontWeight: '800', color: '#fff', marginBottom: 4 },
+  ndrItemLbl:    { fontSize: 10, color: 'rgba(255,255,255,0.75)', textAlign: 'center' },
 
-  sectionTitle:   { fontSize: 11, fontWeight: '700', color: Colors.fg2, textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: 10, marginTop: 4 },
-  statsGrid:      { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
-  statBox:        { flex: 1, minWidth: '30%', backgroundColor: Colors.surface, borderRadius: 14, padding: 14, borderTopWidth: 3, borderWidth: 1, borderColor: Colors.border },
-  statVal:        { fontSize: 22, fontWeight: '800', marginBottom: 4 },
-  statLbl:        { fontSize: 11, color: Colors.fg2 },
+  metricsRow:    { flexDirection: 'row', gap: 8, marginBottom: 8 },
+  metricBox:     { flex: 1, backgroundColor: Colors.surface, borderRadius: 14, padding: 14, borderTopWidth: 3, borderWidth: 1, borderColor: Colors.border },
+  metricVal:     { fontSize: 22, fontWeight: '800', marginBottom: 4 },
+  metricLbl:     { fontSize: 11, color: Colors.fg2 },
 
-  metricsCard:    { backgroundColor: Colors.surface, borderRadius: 14, borderWidth: 1, borderColor: Colors.border, padding: 16, gap: 14, marginBottom: 16 },
-  metricRow:      { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  metricLbl:      { fontSize: 12, color: Colors.fg2, width: 90 },
-  metricBarTrack: { flex: 1, height: 6, backgroundColor: Colors.surface2, borderRadius: 3, overflow: 'hidden' },
-  metricBarFill:  { height: 6, borderRadius: 3 },
-  metricVal:      { fontSize: 12, fontWeight: '700', width: 36, textAlign: 'right' },
+  sectionTitle:  { fontSize: 11, fontWeight: '700', color: Colors.fg2, textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: 10, marginTop: 8 },
 
-  splitCard:      { backgroundColor: Colors.surface, borderRadius: 14, borderWidth: 1, borderColor: Colors.border, padding: 16, marginBottom: 16 },
-  splitRow:       { flexDirection: 'row', height: 10, borderRadius: 6, overflow: 'hidden', marginBottom: 14 },
-  splitBar:       { height: 10 },
-  splitLegend:    { flexDirection: 'row', gap: 24 },
-  splitItem:      { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  legendDot:      { width: 10, height: 10, borderRadius: 5 },
-  splitLbl:       { fontSize: 12, color: Colors.fg2 },
-  splitVal:       { fontSize: 12, fontWeight: '700', color: Colors.fg },
+  perfCard:      { backgroundColor: Colors.surface, borderRadius: 16, borderWidth: 1, borderColor: Colors.border, padding: 16, gap: 14, marginBottom: 16 },
+  perfRow:       { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  perfLbl:       { fontSize: 12, color: Colors.fg2, width: 90 },
+  perfTrack:     { flex: 1, height: 7, backgroundColor: Colors.surface2, borderRadius: 4, overflow: 'hidden' },
+  perfFill:      { height: 7, borderRadius: 4 },
+  perfVal:       { fontSize: 12, fontWeight: '700', width: 36, textAlign: 'right' },
 
-  modeCard:       { backgroundColor: Colors.surface, borderRadius: 14, borderWidth: 1, borderColor: Colors.border, padding: 16, gap: 12, marginBottom: 16 },
-  modeRow:        { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  modeDot:        { width: 8, height: 8, borderRadius: 4 },
-  modeLbl:        { fontSize: 12, color: Colors.fg2, width: 55 },
-  modeBarWrap:    { flex: 1, flexDirection: 'row', height: 6, borderRadius: 3, overflow: 'hidden', backgroundColor: Colors.surface2 },
-  modeBarFill:    { height: 6 },
-  modeCount:      { fontSize: 12, fontWeight: '700', color: Colors.fg, width: 24, textAlign: 'right' },
+  splitCard:     { backgroundColor: Colors.surface, borderRadius: 16, borderWidth: 1, borderColor: Colors.border, padding: 16, marginBottom: 16 },
+  splitBarRow:   { flexDirection: 'row', height: 10, borderRadius: 6, overflow: 'hidden', marginBottom: 14 },
+  splitSegment:  { height: 10 },
+  splitLegend:   { flexDirection: 'row', gap: 24 },
+  legendItem:    { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  legendDot:     { width: 10, height: 10, borderRadius: 5 },
+  legendLbl:     { fontSize: 12, color: Colors.fg2 },
+  legendCount:   { fontSize: 12, fontWeight: '700' },
 });
 
 const s = StyleSheet.create({
-  safe:       { flex: 1, backgroundColor: Colors.bg },
-  header:     { paddingHorizontal: 16, paddingTop: 10, paddingBottom: 8 },
-  title:      { fontSize: 22, fontWeight: '800', color: Colors.fg },
-  qaScroll:   { paddingHorizontal: 16, paddingBottom: 10, gap: 8, alignItems: 'center' },
-  qaChip:     { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 8, backgroundColor: Colors.surface, borderRadius: 20, borderWidth: 1, borderColor: Colors.border },
-  qaIcon:     { fontSize: 14 },
-  qaLabel:    { fontSize: 12, fontWeight: '600', color: Colors.fg2 },
-  tabBar:     { flexDirection: 'row', marginHorizontal: 16, marginBottom: 8, backgroundColor: Colors.surface2, borderRadius: 14, padding: 4 },
-  tabItem:    { flex: 1, paddingVertical: 8, alignItems: 'center', borderRadius: 10 },
-  tabItemOn:  { backgroundColor: Colors.surface, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.08, shadowRadius: 4, elevation: 2 },
-  tabTxt:     { fontSize: 12, fontWeight: '600', color: Colors.fg2 },
-  tabTxtOn:   { color: Colors.accent },
+  safe:        { flex: 1, backgroundColor: Colors.bg },
+  header:      { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 10 },
+  title:       { fontSize: 24, fontWeight: '800', color: Colors.fg, letterSpacing: -0.3 },
+  subtitle:    { fontSize: 12, color: Colors.fg2, marginTop: 2 },
 
-  card:       { backgroundColor: Colors.surface, borderRadius: 14, padding: 14, borderWidth: 1, borderColor: Colors.border, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 3, elevation: 1 },
-  cardTop:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 },
-  prodName:   { fontSize: 14, fontWeight: '600', color: Colors.fg, marginBottom: 2 },
-  meta:       { fontSize: 11, color: Colors.fg2 },
-  amtRow:     { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: Colors.border },
-  metaLbl:    { fontSize: 10, color: Colors.fg3, marginBottom: 2 },
-  metaVal:    { fontSize: 12, color: Colors.fg, fontWeight: '500' },
-  amount:     { fontSize: 18, fontWeight: '800' },
-  btnRow:     { flexDirection: 'row', gap: 8 },
-  btn:        { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 10 },
-  ndrBox:     { backgroundColor: '#FFF5F5', borderRadius: 8, padding: 8, marginBottom: 10, borderWidth: 1, borderColor: '#FECaCa' },
-  ndrTxt:     { fontSize: 11, color: Colors.error },
+  qaScroll:    { paddingHorizontal: 16, paddingBottom: 12, gap: 8, alignItems: 'center' },
+  qaChip:      { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 10, backgroundColor: Colors.surface, borderRadius: 20, borderWidth: 1.5, borderColor: Colors.border },
+  qaChipIcon:  { fontSize: 15 },
+  qaChipLbl:   { fontSize: 12, fontWeight: '600', color: Colors.fg2 },
+
+  tabBar:      { flexDirection: 'row', marginHorizontal: 16, marginBottom: 10, backgroundColor: Colors.surface2, borderRadius: 16, padding: 4 },
+  tabItem:     { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingVertical: 9, borderRadius: 12 },
+  tabItemOn:   { backgroundColor: Colors.surface, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.08, shadowRadius: 4, elevation: 2 },
+  tabItemIcon: { fontSize: 13 },
+  tabTxt:      { fontSize: 11, fontWeight: '600', color: Colors.fg2 },
+  tabTxtOn:    { color: Colors.accent },
+
+  card:        { backgroundColor: Colors.surface, borderRadius: 16, padding: 14, borderWidth: 1, borderColor: Colors.border },
+  cardTop:     { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 },
+  prodName:    { fontSize: 14, fontWeight: '600', color: Colors.fg, marginBottom: 2 },
+  meta:        { fontSize: 11, color: Colors.fg2 },
+  amtRow:      { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: Colors.border },
+  metaLbl:     { fontSize: 10, color: Colors.fg3, marginBottom: 2 },
+  metaVal:     { fontSize: 12, color: Colors.fg, fontWeight: '500' },
+  amount:      { fontSize: 18, fontWeight: '800' },
+  btnRow:      { flexDirection: 'row', gap: 8 },
+  btn:         { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 10 },
+  ndrBox:      { backgroundColor: Colors.errorDim, borderRadius: 10, padding: 10, marginBottom: 10, borderWidth: 1, borderColor: `${Colors.error}20` },
+  ndrTxt:      { fontSize: 11, color: Colors.error },
 });
