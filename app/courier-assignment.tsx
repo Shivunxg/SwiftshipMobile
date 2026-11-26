@@ -51,15 +51,11 @@ const getBrand = (code: string) =>
   Object.entries(BRAND).find(([k]) => code.toUpperCase().includes(k))?.[1] ?? { bg: Colors.accent, text: '#fff' };
 
 // ── API ───────────────────────────────────────────────────────────────────────
-function useCourierRates(params: {
-  fromPincode: string; toPincode: string; weight: number; paymentMethod: string;
-}) {
-  const enabled = params.fromPincode.length === 6 && params.toPincode.length === 6 && params.weight > 0;
+function useCourierOptions(orderId: string | null) {
   return useQuery<CourierRate[]>({
-    queryKey: ['courier-rates', params],
-    queryFn: () =>
-      api.get('/api/couriers/rates', { params }).then(r => r.data),
-    enabled,
+    queryKey: ['courier-options', orderId],
+    queryFn: () => api.get(`/api/orders/${orderId}/courier-options`).then(r => r.data),
+    enabled: !!orderId,
     staleTime: 2 * 60 * 1000,
   });
 }
@@ -76,12 +72,13 @@ function useAssignCourier(orderId: string | null) {
   });
 }
 
-function useCreateWithCourier() {
+function useCreateAndShip() {
   const qc = useQueryClient();
-  const { tenantId } = useAuth();
   return useMutation({
-    mutationFn: (body: Record<string, unknown>) =>
-      api.post(`/api/orders/merchant/${tenantId}`, body).then(r => r.data),
+    mutationFn: async (body: Record<string, unknown>) => {
+      const { data: order } = await api.post('/api/orders', body);
+      return order;
+    },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['orders'] }),
   });
 }
@@ -194,25 +191,23 @@ export default function CourierAssignmentScreen() {
     paymentMethod?: string;
   }>();
 
-  const orderId = params.orderId ? Number(params.orderId) : null;
+  const orderId = params.orderId ?? null;
   const isExistingOrder = orderId != null;
 
-  // For existing orders, fetch the order to get pincodes/weight
-  const { data: existingOrder } = useOrder(orderId ?? 0);
+  // For existing orders, fetch order details
+  const { data: existingOrder } = useOrder(orderId ?? '');
 
-  // Derive route params — from URL params (create flow) OR from existing order
-  const fromPincode   = params.fromPincode   ?? existingOrder?.senderPincode   ?? '';
-  const toPincode     = params.toPincode     ?? existingOrder?.receiverPincode  ?? '';
-  const weight        = Number(params.weight ?? existingOrder?.weight ?? 0);
-  const paymentMethod = params.paymentMethod ?? existingOrder?.paymentMethod    ?? 'PREPAID';
+  // Backend requires an order ID to fetch courier options.
+  // For existing orders use the orderId directly.
+  // For create-flow, we create the order first then fetch options (createdOrderId is set after creation).
+  const [createdOrderId, setCreatedOrderId] = useState<string | null>(null);
+  const activeOrderId = orderId ?? createdOrderId;
 
-  const { data: rates, isLoading, refetch, isRefetching } = useCourierRates({
-    fromPincode, toPincode, weight, paymentMethod,
-  });
+  const { data: rates, isLoading, refetch, isRefetching } = useCourierOptions(activeOrderId);
 
-  const assignMut      = useAssignCourier(orderId);
-  const createWithMut  = useCreateWithCourier();
-  const anyLoading     = assignMut.isPending || createWithMut.isPending;
+  const assignMut     = useAssignCourier(activeOrderId);
+  const createAndShip = useCreateAndShip();
+  const anyLoading    = assignMut.isPending || createAndShip.isPending;
 
   const [sortMode, setSortMode] = useState<SortMode>('default');
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -237,8 +232,8 @@ export default function CourierAssignmentScreen() {
     if (!rate.available) return;
     setSelectedId(rate.courierId);
 
-    if (isExistingOrder) {
-      // Assign to existing order
+    if (isExistingOrder && activeOrderId) {
+      // Ship existing order
       try {
         await assignMut.mutateAsync({ courierCode: rate.courierCode, courierName: rate.courierName });
         Alert.alert('Courier Assigned', `${rate.courierName} has been assigned to this order.`, [
@@ -251,7 +246,7 @@ export default function CourierAssignmentScreen() {
       return;
     }
 
-    // Create flow — retrieve pending shipment payload
+    // Create flow — step 1: create order, step 2: ship it
     const pending = getPendingShipment();
     if (!pending) {
       Alert.alert('Error', 'Shipment data was lost. Please start over.');
@@ -260,12 +255,15 @@ export default function CourierAssignmentScreen() {
     }
 
     try {
-      await createWithMut.mutateAsync({
-        ...pending,
+      const order = await createAndShip.mutateAsync({ ...pending });
+      const newOrderId: string = order.id;
+      setCreatedOrderId(newOrderId);
+
+      await api.post(`/api/orders/${newOrderId}/ship`, {
         courierCode: rate.courierCode,
-        courierPartner: rate.courierName,
-        freightCharge: rate.totalRate,
+        courierName: rate.courierName,
       });
+
       clearPendingShipment();
       Alert.alert('Shipment Created', `Order placed with ${rate.courierName}.`, [
         { text: 'View Orders', onPress: () => router.replace('/(tabs)/orders') },
@@ -275,8 +273,6 @@ export default function CourierAssignmentScreen() {
       Alert.alert('Error', e?.response?.data?.message ?? 'Failed to create shipment.');
     }
   };
-
-  const readyToFetch = fromPincode.length === 6 && toPincode.length === 6 && weight > 0;
 
   return (
     <SafeAreaView style={s.safe}>
@@ -295,7 +291,7 @@ export default function CourierAssignmentScreen() {
       <View style={s.routeCard}>
         <View style={s.pinBox}>
           <Text style={s.pinLabel}>Pickup</Text>
-          <Text style={s.pinCode}>{fromPincode || '— — — — — —'}</Text>
+          <Text style={s.pinCode}>{existingOrder?.senderPincode || params.fromPincode || '— — — — — —'}</Text>
         </View>
         <View style={s.arrow}>
           <View style={s.arrowLine} />
@@ -303,15 +299,15 @@ export default function CourierAssignmentScreen() {
         </View>
         <View style={[s.pinBox, { alignItems: 'flex-end' }]}>
           <Text style={s.pinLabel}>Destination</Text>
-          <Text style={s.pinCode}>{toPincode || '— — — — — —'}</Text>
+          <Text style={s.pinCode}>{existingOrder?.receiverPincode || params.toPincode || '— — — — — —'}</Text>
         </View>
       </View>
 
       {/* Shipment info strip */}
       <View style={s.infoStrip}>
-        <InfoPill label="Weight"  value={`${weight || '—'} kg`} />
+        <InfoPill label="Weight"  value={`${existingOrder?.weight || params.weight || '—'} kg`} />
         <View style={s.infoDiv} />
-        <InfoPill label="Payment" value={paymentMethod === 'COD' ? 'COD' : 'Prepaid'} />
+        <InfoPill label="Payment" value={(existingOrder?.paymentMethod ?? params.paymentMethod) === 'COD' ? 'COD' : 'Prepaid'} />
         <View style={s.infoDiv} />
         <InfoPill label="Available" value={`${available.length} couriers`} />
       </View>
@@ -332,11 +328,11 @@ export default function CourierAssignmentScreen() {
       </View>
 
       {/* Content */}
-      {!readyToFetch ? (
+      {!activeOrderId ? (
         <View style={s.placeholder}>
           <View style={s.placeholderIcon}><Text style={s.placeholderIconTxt}>→</Text></View>
-          <Text style={s.placeholderTitle}>Route Required</Text>
-          <Text style={s.placeholderSub}>Pickup pincode, destination pincode and weight are needed to fetch courier rates.</Text>
+          <Text style={s.placeholderTitle}>Order Required</Text>
+          <Text style={s.placeholderSub}>Create or select an order to view available courier options.</Text>
         </View>
       ) : isLoading ? (
         <View style={s.placeholder}>

@@ -15,7 +15,7 @@ const STATUS_STEPS = [
 export default function OrderDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { data: order, isLoading } = useOrder(Number(id));
+  const { data: order, isLoading } = useOrder(id as string);
   const rtoMut = useInitiateRTO();
   const [showWA, setShowWA] = useState(false);
 

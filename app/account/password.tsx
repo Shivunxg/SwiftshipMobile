@@ -17,10 +17,10 @@ export default function ChangePassword() {
     if (next.length < 8)               { Alert.alert('Error', 'New password must be at least 8 characters'); return; }
     if (next !== confirm)              { Alert.alert('Error', 'Passwords do not match'); return; }
     changePwd.mutate(
-      { currentPassword: current, newPassword: next },
+      next,
       {
         onSuccess: () => Alert.alert('Success', 'Password changed successfully', [{ text: 'OK', onPress: () => router.back() }]),
-        onError: () => Alert.alert('Error', 'Current password is incorrect or request failed'),
+        onError: () => Alert.alert('Error', 'Failed to update password. Please try again.'),
       },
     );
   };

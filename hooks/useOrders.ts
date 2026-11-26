@@ -7,19 +7,19 @@ export const useOrders = () => {
   const tenantId = useAuth(s => s.tenantId);
   return useQuery<Order[]>({
     queryKey: ['orders', tenantId],
-    queryFn: () => api.get(`/api/orders/merchant/${tenantId}`).then(r => r.data),
+    queryFn: () => api.get('/api/orders').then(r => r.data),
     enabled: !!tenantId,
   });
 };
 
-export const useOrder = (id: number) =>
-  useQuery<Order>({ queryKey: ['order', id], queryFn: () => api.get(`/api/orders/${id}`).then(r => r.data) });
+export const useOrder = (id: string) =>
+  useQuery<Order>({ queryKey: ['order', id], queryFn: () => api.get(`/api/orders/${id}`).then(r => r.data), enabled: !!id });
 
 export const useWallet = (userId: number) =>
   useQuery<Wallet>({ queryKey: ['wallet', userId], queryFn: () => api.get(`/api/wallet/${userId}`).then(r => r.data), enabled: !!userId });
 
 export const usePickups = (tenantId: number) =>
-  useQuery<Pickup[]>({ queryKey: ['pickups', tenantId], queryFn: () => api.get(`/api/pickups/locations/merchant/${tenantId}`).then(r => r.data), enabled: !!tenantId });
+  useQuery<Pickup[]>({ queryKey: ['pickups', tenantId], queryFn: () => api.get(`/api/pickups/merchant/${tenantId}`).then(r => r.data), enabled: !!tenantId });
 
 export const usePayouts = () =>
   useQuery<Payout[]>({ queryKey: ['payouts'], queryFn: () => api.get('/api/payouts/pending').then(r => r.data) });
@@ -65,27 +65,47 @@ export const useApproveOrder = () => {
 
 export const useCreateShipment = () => {
   const qc = useQueryClient();
-  const { tenantId } = useAuth();
   return useMutation({
     mutationFn: (body: Record<string, unknown>) =>
-      api.post(`/api/orders/merchant/${tenantId}`, body).then(r => r.data),
+      api.post('/api/orders', body).then(r => r.data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['orders'] }),
   });
 };
 
-export const useAvailableCouriers = (pincode: string, weight: number) =>
-  useQuery({
-    queryKey: ['couriers', pincode, weight],
-    queryFn: () =>
-      api.get(`/api/couriers/available?pincode=${pincode}&weight=${weight}`).then(r => r.data),
-    enabled: pincode.length === 6 && weight > 0,
+export const useCourierOptions = (orderId: string | null) =>
+  useQuery<CourierOption[]>({
+    queryKey: ['courier-options', orderId],
+    queryFn: () => api.get(`/api/orders/${orderId}/courier-options`).then(r => r.data),
+    enabled: !!orderId,
+    staleTime: 2 * 60 * 1000,
   });
 
-export const useChangePassword = () =>
-  useMutation({
-    mutationFn: (body: { currentPassword: string; newPassword: string }) =>
-      api.post('/api/auth/change-password', body),
+interface CourierOption {
+  courierId: number;
+  courierName: string;
+  courierCode: string;
+  serviceType: string;
+  zone: string;
+  freightCharge: number;
+  codCharge: number | null;
+  fuelSurcharge: number | null;
+  totalRate: number;
+  edd: string | null;
+  estimatedDays: number | null;
+  available: boolean;
+  minWeight: number | null;
+  maxWeight: number | null;
+}
+
+export const useChangePassword = () => {
+  const { userId } = useAuth();
+  return useMutation({
+    mutationFn: (newPassword: string) =>
+      api.post(`/api/auth/users/${userId}/reset-password`, newPassword, {
+        headers: { 'Content-Type': 'text/plain' },
+      }),
   });
+};
 
 export const useAssignCourier = () => {
   const qc = useQueryClient();
@@ -110,7 +130,7 @@ export const useWeightDiscrepancies = () => {
   const { tenantId } = useAuth();
   return useQuery<WeightDiscrepancy[]>({
     queryKey: ['weight-discrepancies', tenantId],
-    queryFn: () => api.get(`/api/orders/weight-discrepancy?tenantId=${tenantId}`).then(r => r.data),
+    queryFn: () => api.get(`/api/weight-discrepancies/merchant/${tenantId}`).then(r => r.data),
     enabled: !!tenantId,
   });
 };
@@ -118,8 +138,11 @@ export const useWeightDiscrepancies = () => {
 export const useDisputeWeight = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (discrepancyId: number) =>
-      api.post(`/api/orders/weight-discrepancy/${discrepancyId}/dispute`),
+    mutationFn: ({ discrepancyId, remarks }: { discrepancyId: number; remarks?: string }) =>
+      api.put(`/api/weight-discrepancies/${discrepancyId}/resolve`, {
+        action: 'DISPUTED',
+        remarks: remarks ?? '',
+      }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['weight-discrepancies'] }),
   });
 };
@@ -136,7 +159,7 @@ export const useBulkAssignCourier = () => {
 export const useSchedulePickup = () =>
   useMutation({
     mutationFn: (body: { orderIds: string[]; pickupDate: string; pickupTime: string }) =>
-      api.post('/api/pickups/schedule', body).then(r => r.data),
+      api.post('/api/pickups', body).then(r => r.data),
   });
 
 export const useGenerateLabel = (orderId: string) =>

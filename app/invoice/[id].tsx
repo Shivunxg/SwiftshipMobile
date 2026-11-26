@@ -49,7 +49,7 @@ const tr = StyleSheet.create({
 export default function InvoiceScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { data: order, isLoading } = useOrder(Number(id));
+  const { data: order, isLoading } = useOrder(id as string);
   const { companyName } = useAuth();
 
   if (isLoading || !order) return (

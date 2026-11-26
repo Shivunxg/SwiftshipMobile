@@ -122,7 +122,7 @@ export default function WeightDiscrepancyScreen() {
     `Dispute the weight charge of ₹${fmtINR(d.diffAmount)} for Order #${d.orderNumber}?\n\nOur team will review within 2–3 business days.`,
     [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Dispute', onPress: () => disputeMut.mutate(d.id) },
+      { text: 'Dispute', onPress: () => disputeMut.mutate({ discrepancyId: d.id }) },
     ]
   );
 
@@ -165,8 +165,8 @@ export default function WeightDiscrepancyScreen() {
         </View>
         <View style={s.statDiv} />
         <View style={s.stat}>
-          <Text style={[s.statVal, { color: Colors.success }]}>{counts.WAIVED}</Text>
-          <Text style={s.statLbl}>Waived</Text>
+          <Text style={[s.statVal, { color: Colors.success }]}>{counts.RESOLVED}</Text>
+          <Text style={s.statLbl}>Resolved</Text>
         </View>
       </View>
 

@@ -27,7 +27,7 @@ function afterTomorrow(): string {
 export default function LabelPickupScreen() {
   const router = useRouter();
   const { orderId } = useLocalSearchParams<{ orderId: string }>();
-  const id = Number(orderId);
+  const id = orderId ?? '';
   const { data: order, isLoading } = useOrder(id);
   const { data: labelData, isLoading: labelLoading } = useGenerateLabel(id);
   const scheduleMut = useSchedulePickup();

@@ -59,18 +59,9 @@ export default function WalletRechargeScreen() {
   };
 
   const applyCoupon = async () => {
-    const code = couponInput.trim().toUpperCase();
-    if (!code) return;
-    setCouponLoading(true);
-    try {
-      const { data } = await api.post('/api/wallet/coupon/validate', { code, amount });
-      setAppliedCoupon({ code, cashback: data.cashback ?? 0, description: data.description ?? 'Coupon applied' });
-    } catch (e: any) {
-      Alert.alert('Invalid Coupon', e?.response?.data?.message ?? 'This coupon code is not valid.');
-      setAppliedCoupon(null);
-    } finally {
-      setCouponLoading(false);
-    }
+    // Coupon validation endpoint not available in current backend version.
+    Alert.alert('Coupons', 'Coupon support is coming soon.');
+    setCouponInput('');
   };
 
   const removeCoupon = () => {
@@ -86,12 +77,14 @@ export default function WalletRechargeScreen() {
     setLoading(true);
     try {
       const { data } = await api.post(`/api/wallet/topup/initialize/${userId}`, {
-        amount: payable,
-        rechargeAmount: amount,
-        couponCode: appliedCoupon?.code ?? null,
-        paymentGateway: gateway,
+        amount: payable * 100, // backend expects paise
       });
-      await Linking.openURL(data.paymentUrl);
+      // Backend returns Razorpay order object: { keyId, orderId, amount, currency }
+      // Open Razorpay checkout deep link
+      const rzpUrl = `razorpay://payment?key=${data.keyId}&order_id=${data.orderId}&amount=${data.amount}&currency=${data.currency ?? 'INR'}`;
+      const webFallback = `https://api.razorpay.com/v1/checkout/embedded?key_id=${data.keyId}&order_id=${data.orderId}`;
+      const canOpen = await Linking.canOpenURL(rzpUrl);
+      await Linking.openURL(canOpen ? rzpUrl : webFallback);
       qc.invalidateQueries({ queryKey: ['wallet'] });
       router.back();
     } catch (e: any) {
