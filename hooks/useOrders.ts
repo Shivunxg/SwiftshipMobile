@@ -2,41 +2,44 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth-store';
 import type { Order, Wallet, Pickup, Payout, WeightDiscrepancy, PayoutDetail } from '../lib/types';
+import { mapOrder, mapPayout, mapPayoutDetail, mapWeightDiscrepancy, mapWallet, mapPickup, isNDR, isRTO, isCOD } from '../lib/mappers';
+
+const toArray = (d: unknown): any[] => Array.isArray(d) ? d : (d as any)?.content ?? (d as any)?.data ?? [];
 
 export const useOrders = () => {
   const tenantId = useAuth(s => s.tenantId);
   return useQuery<Order[]>({
     queryKey: ['orders', tenantId],
-    queryFn: () => api.get('/api/orders').then(r => r.data),
+    queryFn: () => api.get('/api/orders').then(r => toArray(r.data).map(mapOrder)),
     enabled: !!tenantId,
   });
 };
 
 export const useOrder = (id: string) =>
-  useQuery<Order>({ queryKey: ['order', id], queryFn: () => api.get(`/api/orders/${id}`).then(r => r.data), enabled: !!id });
+  useQuery<Order>({ queryKey: ['order', id], queryFn: () => api.get(`/api/orders/${id}`).then(r => mapOrder(r.data)), enabled: !!id });
 
 export const useWallet = (userId: number) =>
-  useQuery<Wallet>({ queryKey: ['wallet', userId], queryFn: () => api.get(`/api/wallet/${userId}`).then(r => r.data), enabled: !!userId });
+  useQuery<Wallet>({ queryKey: ['wallet', userId], queryFn: () => api.get(`/api/wallet/${userId}`).then(r => mapWallet(r.data)), enabled: !!userId });
 
 export const usePickups = (tenantId: number) =>
-  useQuery<Pickup[]>({ queryKey: ['pickups', tenantId], queryFn: () => api.get(`/api/pickups/merchant/${tenantId}`).then(r => r.data), enabled: !!tenantId });
+  useQuery<Pickup[]>({ queryKey: ['pickups', tenantId], queryFn: () => api.get(`/api/pickups/merchant/${tenantId}`).then(r => toArray(r.data).map(mapPickup)), enabled: !!tenantId });
 
 export const usePayouts = () =>
-  useQuery<Payout[]>({ queryKey: ['payouts'], queryFn: () => api.get('/api/payouts/pending').then(r => r.data) });
+  useQuery<Payout[]>({ queryKey: ['payouts'], queryFn: () => api.get('/api/payouts/pending').then(r => toArray(r.data).map(mapPayout)) });
 
 export const useCODOrders = () => {
   const { data, ...rest } = useOrders();
-  return { data: data?.filter(o => o.paymentMethod === 'COD'), ...rest };
+  return { data: data?.filter(o => isCOD(o.paymentMethod)), ...rest };
 };
 
 export const useNDROrders = () => {
   const { data, ...rest } = useOrders();
-  return { data: data?.filter(o => o.status === 'DELIVERY_FAILED' || o.status === 'NDR'), ...rest };
+  return { data: data?.filter(o => isNDR(o.status)), ...rest };
 };
 
 export const useRTOOrders = () => {
   const { data, ...rest } = useOrders();
-  return { data: data?.filter(o => o.status?.startsWith('RTO') ?? false), ...rest };
+  return { data: data?.filter(o => isRTO(o.status)), ...rest };
 };
 
 export const useInitiateRTO = () => {
@@ -122,7 +125,7 @@ export const useAssignCourier = () => {
 export const usePayoutDetail = (id: number) =>
   useQuery<PayoutDetail>({
     queryKey: ['payout', id],
-    queryFn: () => api.get(`/api/payouts/${id}`).then(r => r.data),
+    queryFn: () => api.get(`/api/payouts/${id}`).then(r => mapPayoutDetail(r.data)),
     enabled: !!id,
   });
 
@@ -130,7 +133,7 @@ export const useWeightDiscrepancies = () => {
   const { tenantId } = useAuth();
   return useQuery<WeightDiscrepancy[]>({
     queryKey: ['weight-discrepancies', tenantId],
-    queryFn: () => api.get(`/api/weight-discrepancies/merchant/${tenantId}`).then(r => r.data),
+    queryFn: () => api.get(`/api/weight-discrepancies/merchant/${tenantId}`).then(r => toArray(r.data).map(mapWeightDiscrepancy)),
     enabled: !!tenantId,
   });
 };
