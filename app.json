@@ -49,7 +49,28 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": ["expo-router", "expo-secure-store"],
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableNewArchitecture": false,
+            "kotlinVersion": "1.9.25",
+            "compileSdkVersion": 35,
+            "targetSdkVersion": 35,
+            "minSdkVersion": 24,
+            "extraPropertiesForGradleProperties": {
+              "org.gradle.jvmargs": "-Xmx4096m -XX:MaxMetaspaceSize=512m"
+            }
+          },
+          "ios": {
+            "enableNewArchitecture": false
+          }
+        }
+      ]
+    ],
     "jsEngine": "hermes"
   }
 }
