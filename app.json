@@ -6,8 +6,21 @@
     "orientation": "portrait",
     "scheme": "swiftship",
     "platforms": ["ios", "android", "web"],
-    "ios": { "supportsTablet": false, "bundleIdentifier": "co.in.swiftship.mobile" },
-    "android": { "package": "co.in.swiftship.mobile", "adaptiveIcon": { "backgroundColor": "#07070C" } },
+    "extra": {
+      "eas": {
+        "projectId": "c63c009d-92b5-4a4d-81a0-cc60fa2"
+      }
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "co.in.swiftship.mobile",
+      "buildNumber": "1"
+    },
+    "android": {
+      "package": "co.in.swiftship.mobile",
+      "versionCode": 1,
+      "adaptiveIcon": { "backgroundColor": "#07070C" }
+    },
     "plugins": ["expo-router", "expo-secure-store"]
   }
 }
