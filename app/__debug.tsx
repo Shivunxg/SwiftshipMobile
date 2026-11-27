@@ -19,7 +19,8 @@ const ENDPOINTS: Array<{ label: string; call: () => Promise<unknown> }> = [
 ];
 
 export default function DebugScreen() {
-  const { user } = useAuth();
+  const name = useAuth(s => s.name);
+  const companyName = useAuth(s => s.companyName);
   const [results, setResults] = useState<Result[]>(
     ENDPOINTS.map(e => ({ label: e.label, status: 'pending', detail: '' }))
   );
@@ -60,7 +61,7 @@ export default function DebugScreen() {
   return (
     <View style={s.container}>
       <Text style={s.header}>API Health Check</Text>
-      {user && <Text style={s.user}>Logged in as: {user.email ?? user.username ?? JSON.stringify(user).slice(0,40)}</Text>}
+      {name ? <Text style={s.user}>Logged in as: {name} · {companyName}</Text> : null}
       <View style={s.summary}>
         <Text style={[s.badge, { backgroundColor: '#16a34a' }]}>{ok} OK</Text>
         <Text style={[s.badge, { backgroundColor: '#dc2626' }]}>{fail} FAIL</Text>
