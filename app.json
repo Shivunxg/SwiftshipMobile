@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "SwiftShip",
-    "slug": "swiftship-mobile",
+    "slug": "swiftship-mobile-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "scheme": "swiftship",
