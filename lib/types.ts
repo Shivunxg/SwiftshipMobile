@@ -205,3 +205,35 @@ export interface PayoutDetail {
   batchId: string | null;
   remark: string | null;
 }
+
+export type PaymentMethod = 'COD' | 'PREPAID';
+
+export interface OrderItem {
+  name: string;
+  sku?: string;
+  quantity: number;
+  price: number;
+  weight: number;
+}
+
+export interface CodReconciliationItem {
+  id: string;
+  orderId: string;
+  orderNumber: string;
+  awbNumber: string;
+  amount: number;
+  status: 'PENDING' | 'CASH_COLLECTED' | 'COD_REMITTED';
+  orderStatus: string;
+  courierPartner?: string;
+  merchantId?: string;
+  deliveryDate: string;
+}
+
+export interface OrderFilter {
+  status?: string;
+  paymentMethod?: PaymentMethod;
+  dateFrom?: string;
+  dateTo?: string;
+  search?: string;
+  courierPartner?: string;
+}
