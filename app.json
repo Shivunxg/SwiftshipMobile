@@ -58,11 +58,11 @@
           "android": {
             "enableNewArchitecture": false,
             "kotlinVersion": "1.9.25",
-            "compileSdkVersion": 37,
+            "compileSdkVersion": 35,
             "targetSdkVersion": 35,
             "minSdkVersion": 24,
             "extraPropertiesForGradleProperties": {
-              "org.gradle.jvmargs": "-Xmx4096m -XX:MaxMetaspaceSize=512m"
+              "org.gradle.jvmargs": "-Xmx3072m -XX:MaxMetaspaceSize=512m"
             }
           },
           "ios": {
