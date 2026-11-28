@@ -25,6 +25,7 @@ const ITEMS: OpsItem[] = [
   { icon: 'scale-outline',            title: 'Weight Discrepancies',       subtitle: 'Accept or dispute courier weight charges',       route: '/weight-discrepancy' },
   { icon: 'settings-outline',         title: 'Manage Couriers',            subtitle: 'Enable or pause active courier partners',        route: '/manage-couriers' },
   { icon: 'location-outline',         title: 'Warehouse Locations',        subtitle: 'Add and manage pickup addresses',                route: '/warehouses' },
+  { icon: 'calendar-outline',          title: '7-Day Settlement Cycles',    subtitle: 'COD remittance schedule grouped by 7-day cycle', route: '/pending-payouts-grouped' },
   { icon: 'pulse-outline',            title: 'API Health Check',           subtitle: 'Verify all backend endpoints live',              route: '/__debug' },
 ];
 

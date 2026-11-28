@@ -6,7 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Colors } from '../../constants/colors';
-import { useOrders, useWallet } from '../../hooks/useOrders';
+import { useOrders, useWallet, useCodReconciliation } from '../../hooks/useOrders';
 import { useAuth } from '../../lib/auth-store';
 import type { OrderStatus } from '../../lib/types';
 import { fmtINR } from '../../lib/format';
@@ -69,6 +69,7 @@ export default function Dashboard() {
   const { name, userId, walletBalance } = useAuth();
   const { data: orders, refetch, isRefetching, isError: ordersError } = useOrders();
   const { data: wallet } = useWallet(userId);
+  const { data: codItems } = useCodReconciliation();
 
   useEffect(() => {
     if (wallet?.balance !== undefined) {
@@ -86,6 +87,7 @@ export default function Dashboard() {
     total:     o.length,
   };
   const bal    = wallet?.balance ?? walletBalance;
+  const codDue = (codItems ?? []).filter(c => c.status === 'PENDING').reduce((sum, c) => sum + c.amount, 0);
   const recent = o.slice(0, 6);
 
   return (
@@ -159,7 +161,7 @@ export default function Dashboard() {
               <View>
                 <Text style={s.statLbl}>Wallet Balance</Text>
                 <Text style={[s.statVal, { color: Colors.fg, fontVariant: ['tabular-nums'] }]}>₹{fmtINR(bal)}</Text>
-                <Text style={[s.statHint, { color: Colors.success }]}>Tap to view wallet</Text>
+                <Text style={[s.statHint, { color: Colors.success }]}>{codDue > 0 ? `COD Due: ₹${fmtINR(codDue)}` : 'Tap to view wallet'}</Text>
               </View>
               <TouchableOpacity style={s.codBtn} onPress={() => router.push('/pending-payouts')} activeOpacity={0.8}>
                 <Text style={s.codBtnTxt}>COD Reconciliation</Text>

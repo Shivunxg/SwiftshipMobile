@@ -1,352 +1,360 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
-  View, Text, ScrollView, StyleSheet, TextInput, TouchableOpacity,
-  Alert, KeyboardAvoidingView, Platform,
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { Colors } from '../constants/colors';
-import { usePickups } from '../hooks/useOrders';
+import { router } from 'expo-router';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { api } from '../lib/api';
 import { useAuth } from '../lib/auth-store';
-import { setPendingShipment } from '../lib/pending-shipment';
-
-type Step = 1 | 2 | 3;
-
-interface FormData {
-  // Customer
-  receiverName: string;
-  receiverPhone: string;
-  receiverAddress: string;
-  receiverCity: string;
-  receiverState: string;
-  receiverPincode: string;
-  // Package
-  itemContents: string;
-  weight: string;
-  length: string;
-  width: string;
-  height: string;
-  orderValue: string;
-  paymentMethod: 'COD' | 'PREPAID';
-  codAmount: string;
-  // Pickup
-  pickupLocationId: string;
-}
-
-const INIT: FormData = {
-  receiverName: '', receiverPhone: '', receiverAddress: '',
-  receiverCity: '', receiverState: '', receiverPincode: '',
-  itemContents: '', weight: '', length: '', width: '', height: '',
-  orderValue: '', paymentMethod: 'PREPAID', codAmount: '',
-  pickupLocationId: '',
-};
-
-function Field({ label, value, onChange, placeholder, keyboardType = 'default', required }: {
-  label: string; value: string; onChange: (v: string) => void;
-  placeholder?: string; keyboardType?: any; required?: boolean;
-}) {
-  return (
-    <View style={f.wrap}>
-      <Text style={f.label}>{label}{required ? <Text style={f.req}> *</Text> : null}</Text>
-      <TextInput
-        style={f.input}
-        value={value}
-        onChangeText={onChange}
-        placeholder={placeholder ?? label}
-        placeholderTextColor={Colors.fg3}
-        keyboardType={keyboardType}
-      />
-    </View>
-  );
-}
-
-const f = StyleSheet.create({
-  wrap:  { marginBottom: 14 },
-  label: { fontSize: 12, fontWeight: '600', color: Colors.fg2, marginBottom: 5 },
-  req:   { color: Colors.error },
-  input: { backgroundColor: Colors.surface, borderRadius: 12, borderWidth: 1, borderColor: Colors.border, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, color: Colors.fg },
-});
+import type { OrderItem, PaymentMethod, WarehouseLocation } from '../lib/types';
+import { mergeWarehouses, useWarehouses } from '../lib/warehouse-store';
 
 export default function CreateShipmentScreen() {
-  const router = useRouter();
-  const { tenantId } = useAuth();
-  const { data: pickups } = usePickups(tenantId);
-  const [step, setStep] = useState<Step>(1);
-  const [form, setForm] = useState<FormData>(INIT);
+  const queryClient = useQueryClient();
+  const { tenantId, role } = useAuth();
+  const { warehouses: localWarehouses, hydrate, addWarehouse } = useWarehouses();
 
-  const set = (key: keyof FormData) => (val: string) => setForm(p => ({ ...p, [key]: val }));
+  useEffect(() => {
+    void hydrate();
+  }, [hydrate]);
 
-  const validateStep1 = () => {
-    if (!form.receiverName.trim()) return 'Customer name is required';
-    if (!/^\d{10}$/.test(form.receiverPhone)) return 'Enter valid 10-digit phone';
-    if (!form.receiverAddress.trim()) return 'Address is required';
-    if (!form.receiverCity.trim()) return 'City is required';
-    if (!form.receiverState.trim()) return 'State is required';
-    if (!/^\d{6}$/.test(form.receiverPincode)) return 'Enter valid 6-digit pincode';
-    return null;
-  };
+  const isMerchant = !role || role.toUpperCase().includes('MERCHANT');
+  const pickupQuery = useQuery<WarehouseLocation[]>({
+    queryKey: ['pickup-locations', tenantId, role],
+    queryFn: async () => {
+      const path = isMerchant && tenantId ? `/api/pickups/locations/merchant/${tenantId}` : '/api/pickups/locations';
+      const res = await api.get(path);
+      const list = Array.isArray(res.data) ? res.data : res.data?.data ?? res.data?.content ?? [];
+      return list.map((raw: Record<string, unknown>) => ({
+        id: String(raw.id ?? raw.pickupLocationId ?? ''),
+        name: String(raw.addressName ?? raw.address_name ?? raw.name ?? raw.warehouseName ?? 'Warehouse'),
+        contactName: String(raw.contactName ?? raw.contact_name ?? 'Dispatch Desk'),
+        phone: String(raw.contactNumber ?? raw.contact_number ?? raw.phone ?? ''),
+        address: String(raw.addressLine ?? raw.address_line ?? raw.address ?? ''),
+        city: String(raw.city ?? ''),
+        state: String(raw.state ?? ''),
+        pincode: String(raw.pincode ?? ''),
+        isDefault: Boolean(raw.isDefault ?? raw.default ?? raw.is_default ?? false),
+        source: 'server' as const,
+      }));
+    },
+  });
 
-  const validateStep2 = () => {
-    if (!form.itemContents.trim()) return 'Item description is required';
-    if (!form.weight || Number(form.weight) <= 0) return 'Enter valid weight (kg)';
-    if (!form.orderValue || Number(form.orderValue) <= 0) return 'Enter order value';
-    if (form.paymentMethod === 'COD' && (!form.codAmount || Number(form.codAmount) <= 0))
-      return 'Enter COD amount';
-    return null;
-  };
+  const warehouses = useMemo(
+    () => mergeWarehouses(pickupQuery.data ?? [], localWarehouses),
+    [pickupQuery.data, localWarehouses]
+  );
 
-  const nextStep = () => {
-    if (step === 1) {
-      const err = validateStep1();
-      if (err) { Alert.alert('Required', err); return; }
+  const defaultWh = warehouses.find((w) => w.isDefault)?.name ?? warehouses[0]?.name ?? 'Primary Warehouse';
+
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('PREPAID');
+  const [pickupLocation, setPickupLocation] = useState(defaultWh);
+
+  useEffect(() => {
+    if (defaultWh && (!pickupLocation || pickupLocation === 'Primary Warehouse')) {
+      setPickupLocation(defaultWh);
     }
-    if (step === 2) {
-      const err = validateStep2();
-      if (err) { Alert.alert('Required', err); return; }
-    }
-    setStep(s => (s + 1) as Step);
-  };
+  }, [defaultWh, pickupLocation]);
+  const [showAddWh, setShowAddWh] = useState(false);
+  const [whName, setWhName] = useState('');
+  const [whCity, setWhCity] = useState('');
+  const [whPincode, setWhPincode] = useState('');
 
-  const submit = () => {
-    const pickup = pickups?.find(p => String(p.id) === form.pickupLocationId);
-    const fromPincode = pickup?.pincode ?? '';
+  const [receiverName, setReceiverName] = useState('');
+  const [receiverPhone, setReceiverPhone] = useState('');
+  const [receiverAddress, setReceiverAddress] = useState('');
+  const [receiverCity, setReceiverCity] = useState('');
+  const [receiverState, setReceiverState] = useState('');
+  const [receiverPincode, setReceiverPincode] = useState('');
 
-    setPendingShipment({
-      receiverName:    form.receiverName.trim(),
-      receiverPhone:   form.receiverPhone.trim(),
-      receiverAddress: form.receiverAddress.trim(),
-      receiverCity:    form.receiverCity.trim(),
-      receiverState:   form.receiverState.trim(),
-      receiverPincode: form.receiverPincode.trim(),
-      itemContents:    form.itemContents.trim(),
-      weight:          Number(form.weight),
-      length:          form.length ? Number(form.length) : null,
-      width:           form.width  ? Number(form.width)  : null,
-      height:          form.height ? Number(form.height) : null,
-      orderValue:      Number(form.orderValue),
-      paymentMethod:   form.paymentMethod,
-      codAmount:       form.paymentMethod === 'COD' ? Number(form.codAmount) : null,
-      pickupLocationId: form.pickupLocationId ? Number(form.pickupLocationId) : null,
-      fromPincode,
+  const [items, setItems] = useState<OrderItem[]>([
+    { name: '', sku: '', quantity: 1, price: 0, weight: 0.5 },
+  ]);
+  const [codAmount, setCodAmount] = useState('');
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const totalAmount = items.reduce((s, it) => s + (Number(it.price) || 0) * (Number(it.quantity) || 1), 0);
+  const totalWeight = Number(
+    items.reduce((s, it) => s + (Number(it.weight) || 0.5) * (Number(it.quantity) || 1), 0).toFixed(2)
+  );
+  const totalQty = items.reduce((s, it) => s + (Number(it.quantity) || 1), 0);
+
+  const createMutation = useMutation({
+    mutationFn: async () => {
+      const cleanedItems = items.map((it) => ({
+        name: it.name.trim() || 'Parcel Item',
+        sku: it.sku?.trim() || undefined,
+        quantity: Math.max(1, Number(it.quantity) || 1),
+        price: Math.max(0, Number(it.price) || 0),
+        weight: Math.max(0.1, Number(it.weight) || 0.5),
+      }));
+      const res = await api.post('/api/orders', {
+        paymentMethod,
+        pickupLocation: pickupLocation.trim() || defaultWh,
+        receiverName: receiverName.trim(),
+        receiverPhone: receiverPhone.trim(),
+        receiverAddress: receiverAddress.trim(),
+        receiverCity: receiverCity.trim(),
+        receiverState: receiverState.trim(),
+        receiverPincode: receiverPincode.trim(),
+        itemName: cleanedItems.map((i) => `${i.name} × ${i.quantity}`).join(', '),
+        itemQuantity: totalQty,
+        items: cleanedItems,
+        weight: Math.max(0.1, totalWeight),
+        orderAmount: totalAmount,
+        codAmount: paymentMethod === 'COD' ? Number(codAmount || totalAmount) || 0 : 0,
+      });
+      return res.data;
+    },
+    onSuccess: (data) => {
+      void queryClient.invalidateQueries({ queryKey: ['orders'] });
+      const createdId = String(data?.data?.id ?? data?.id ?? '');
+      if (createdId) {
+        router.replace({ pathname: '/courier-assignment', params: { orderId: createdId } });
+      } else {
+        router.back();
+      }
+    },
+    onError: (err: unknown) => {
+      const message = err instanceof Error ? err.message : 'Unable to create shipment';
+      setErrorMsg(message);
+    },
+  });
+
+  const handleAddWhInline = async () => {
+    if (!whName.trim()) return;
+    const created = await addWarehouse({
+      name: whName.trim(),
+      contactName: 'Dispatch Desk',
+      phone: '',
+      address: '',
+      city: whCity.trim(),
+      state: '',
+      pincode: whPincode.trim(),
+      isDefault: false,
     });
-
-    router.replace({
-      pathname: '/courier-assignment',
-      params: {
-        fromPincode,
-        toPincode:     form.receiverPincode.trim(),
-        weight:        form.weight,
-        paymentMethod: form.paymentMethod,
-      },
-    });
+    setPickupLocation(created.name);
+    setWhName('');
+    setWhCity('');
+    setWhPincode('');
+    setShowAddWh(false);
   };
-
-  const stepLabel = ['Customer Details', 'Package Details', 'Review & Confirm'];
 
   return (
-    <SafeAreaView style={s.safe}>
-      {/* Header */}
-      <View style={s.header}>
-        <TouchableOpacity onPress={() => step > 1 ? setStep(s => (s - 1) as Step) : router.back()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-          <Text style={s.backBtn}>‹ {step > 1 ? 'Back' : 'Cancel'}</Text>
-        </TouchableOpacity>
-        <Text style={s.title}>Create Shipment</Text>
-        <View style={{ width: 60 }} />
-      </View>
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <Text style={styles.title}>Create Shipment</Text>
 
-      {/* Progress */}
-      <View style={s.progress}>
-        {[1, 2, 3].map(n => (
-          <React.Fragment key={n}>
-            <View style={[s.stepCircle, step >= n && s.stepCircleActive]}>
-              <Text style={[s.stepNum, step >= n && s.stepNumActive]}>{n}</Text>
-            </View>
-            {n < 3 && <View style={[s.stepLine, step > n && s.stepLineActive]} />}
-          </React.Fragment>
-        ))}
-      </View>
-      <Text style={s.stepLabel}>{stepLabel[step - 1]}</Text>
+      {errorMsg ? <Text style={styles.errorText}>{errorMsg}</Text> : null}
 
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={s.form} keyboardShouldPersistTaps="handled">
+      <View style={styles.card}>
+        <Text style={styles.label}>Payment Mode</Text>
+        <View style={styles.segmentRow}>
+          {(['PREPAID', 'COD'] as PaymentMethod[]).map((mode) => (
+            <TouchableOpacity
+              key={mode}
+              style={[styles.segmentBtn, paymentMethod === mode && styles.segmentActive]}
+              onPress={() => setPaymentMethod(mode)}
+            >
+              <Text style={[styles.segmentText, paymentMethod === mode && styles.segmentTextActive]}>
+                {mode}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
 
-          {/* ── Step 1: Customer ─────────────────────────────────────────── */}
-          {step === 1 && (
-            <>
-              <Field label="Customer Name"    value={form.receiverName}    onChange={set('receiverName')}    required />
-              <Field label="Phone Number"     value={form.receiverPhone}   onChange={set('receiverPhone')}   required keyboardType="phone-pad" placeholder="10-digit mobile" />
-              <Field label="Address Line"     value={form.receiverAddress} onChange={set('receiverAddress')} required placeholder="House / flat / street" />
-              <View style={s.row}>
-                <View style={{ flex: 1 }}>
-                  <Field label="City"  value={form.receiverCity}    onChange={set('receiverCity')}    required />
-                </View>
-                <View style={{ width: 10 }} />
-                <View style={{ flex: 1 }}>
-                  <Field label="State" value={form.receiverState}   onChange={set('receiverState')}   required />
-                </View>
-              </View>
-              <Field label="Pincode" value={form.receiverPincode} onChange={set('receiverPincode')} required keyboardType="numeric" placeholder="6-digit pincode" />
-            </>
-          )}
+        <View style={styles.rowBetween}>
+          <Text style={styles.label}>Pickup Warehouse</Text>
+          <TouchableOpacity onPress={() => setShowAddWh((p) => !p)}>
+            <Text style={styles.linkText}>{showAddWh ? 'Cancel' : '+ Add Warehouse'}</Text>
+          </TouchableOpacity>
+        </View>
 
-          {/* ── Step 2: Package ──────────────────────────────────────────── */}
-          {step === 2 && (
-            <>
-              <Field label="Item Description" value={form.itemContents} onChange={set('itemContents')} required placeholder="e.g. Electronics, Clothing" />
-              <View style={s.row}>
-                <View style={{ flex: 1 }}>
-                  <Field label="Weight (kg)" value={form.weight} onChange={set('weight')} required keyboardType="decimal-pad" />
-                </View>
-                <View style={{ width: 10 }} />
-                <View style={{ flex: 1 }}>
-                  <Field label="Order Value (₹)" value={form.orderValue} onChange={set('orderValue')} required keyboardType="numeric" />
-                </View>
-              </View>
-
-              <Text style={s.dimLabel}>Dimensions (cm) — optional</Text>
-              <View style={s.row}>
-                <View style={{ flex: 1 }}><Field label="L" value={form.length} onChange={set('length')} keyboardType="numeric" /></View>
-                <View style={{ width: 8 }} />
-                <View style={{ flex: 1 }}><Field label="W" value={form.width}  onChange={set('width')}  keyboardType="numeric" /></View>
-                <View style={{ width: 8 }} />
-                <View style={{ flex: 1 }}><Field label="H" value={form.height} onChange={set('height')} keyboardType="numeric" /></View>
-              </View>
-
-              <Text style={s.dimLabel}>Payment Mode</Text>
-              <View style={s.payRow}>
-                {(['PREPAID', 'COD'] as const).map(m => (
-                  <TouchableOpacity
-                    key={m}
-                    style={[s.payChip, form.paymentMethod === m && s.payChipOn]}
-                    onPress={() => set('paymentMethod')(m)}
-                  >
-                    <Text style={[s.payChipTxt, form.paymentMethod === m && s.payChipTxtOn]}>
-                      {m === 'PREPAID' ? 'Prepaid' : 'Cash on Delivery'}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-
-              {form.paymentMethod === 'COD' && (
-                <Field label="COD Amount (₹)" value={form.codAmount} onChange={set('codAmount')} required keyboardType="numeric" />
-              )}
-
-              {/* Pickup location */}
-              {pickups && pickups.length > 0 && (
-                <>
-                  <Text style={s.dimLabel}>Pickup Location</Text>
-                  {pickups.map(p => (
-                    <TouchableOpacity
-                      key={p.id}
-                      style={[s.pickupRow, String(p.id) === form.pickupLocationId && s.pickupRowOn]}
-                      onPress={() => set('pickupLocationId')(String(p.id))}
-                    >
-                      <View style={{ flex: 1 }}>
-                        <Text style={s.pickupName}>{p.contactPerson}</Text>
-                        <Text style={s.pickupAddr}>{p.pickupAddress}, {p.city} — {p.pincode}</Text>
-                      </View>
-                      {String(p.id) === form.pickupLocationId && (
-                        <View style={s.pickupCheck}><Text style={s.pickupCheckTxt}>✓</Text></View>
-                      )}
-                    </TouchableOpacity>
-                  ))}
-                </>
-              )}
-            </>
-          )}
-
-          {/* ── Step 3: Review ───────────────────────────────────────────── */}
-          {step === 3 && (
-            <>
-              <View style={s.reviewSection}>
-                <Text style={s.reviewHead}>Customer Details</Text>
-                <ReviewRow label="Name"    value={form.receiverName} />
-                <ReviewRow label="Phone"   value={form.receiverPhone} />
-                <ReviewRow label="Address" value={`${form.receiverAddress}, ${form.receiverCity}, ${form.receiverState} — ${form.receiverPincode}`} />
-              </View>
-              <View style={s.reviewSection}>
-                <Text style={s.reviewHead}>Package Details</Text>
-                <ReviewRow label="Item"    value={form.itemContents} />
-                <ReviewRow label="Weight"  value={`${form.weight} kg`} />
-                {(form.length || form.width || form.height) && (
-                  <ReviewRow label="Dims" value={`${form.length || '—'} × ${form.width || '—'} × ${form.height || '—'} cm`} />
-                )}
-                <ReviewRow label="Value"   value={`₹${form.orderValue}`} />
-                <ReviewRow label="Payment" value={form.paymentMethod === 'COD' ? `COD — ₹${form.codAmount}` : 'Prepaid'} />
-              </View>
-            </>
-          )}
-
-          <View style={{ height: 24 }} />
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.whScroll}>
+          {warehouses.map((wh) => (
+            <TouchableOpacity
+              key={wh.id}
+              style={[styles.whChip, pickupLocation === wh.name && styles.whChipActive]}
+              onPress={() => setPickupLocation(wh.name)}
+            >
+              <Text style={[styles.whChipText, pickupLocation === wh.name && styles.whChipTextActive]}>
+                {wh.name}
+              </Text>
+            </TouchableOpacity>
+          ))}
         </ScrollView>
 
-        {/* CTA */}
-        <View style={s.footer}>
-          {step < 3 ? (
-            <TouchableOpacity style={s.btn} onPress={nextStep} activeOpacity={0.85}>
-              <Text style={s.btnTxt}>Continue  ›</Text>
+        {showAddWh ? (
+          <View style={styles.inlineBox}>
+            <TextInput
+              style={styles.input}
+              placeholder="Warehouse Name"
+              value={whName}
+              onChangeText={setWhName}
+            />
+            <View style={styles.twoCol}>
+              <TextInput
+                style={[styles.input, styles.flex1]}
+                placeholder="City"
+                value={whCity}
+                onChangeText={setWhCity}
+              />
+              <TextInput
+                style={[styles.input, styles.flex1]}
+                placeholder="Pincode"
+                keyboardType="numeric"
+                value={whPincode}
+                onChangeText={setWhPincode}
+              />
+            </View>
+            <TouchableOpacity style={styles.secondaryBtn} onPress={() => void handleAddWhInline()}>
+              <Text style={styles.secondaryBtnText}>Save & Select Warehouse</Text>
             </TouchableOpacity>
-          ) : (
-            <TouchableOpacity style={s.btn} onPress={submit} activeOpacity={0.85}>
-              <Text style={s.btnTxt}>Find Couriers  →</Text>
-            </TouchableOpacity>
-          )}
+          </View>
+        ) : null}
+
+        <Text style={styles.label}>Receiver Details</Text>
+        <TextInput style={styles.input} placeholder="Receiver Name" value={receiverName} onChangeText={setReceiverName} />
+        <TextInput style={styles.input} placeholder="Phone" keyboardType="phone-pad" value={receiverPhone} onChangeText={setReceiverPhone} />
+        <TextInput style={styles.input} placeholder="Address" value={receiverAddress} onChangeText={setReceiverAddress} />
+        <View style={styles.twoCol}>
+          <TextInput style={[styles.input, styles.flex1]} placeholder="City" value={receiverCity} onChangeText={setReceiverCity} />
+          <TextInput style={[styles.input, styles.flex1]} placeholder="State" value={receiverState} onChangeText={setReceiverState} />
         </View>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+        <TextInput style={styles.input} placeholder="Pincode" keyboardType="numeric" value={receiverPincode} onChangeText={setReceiverPincode} />
+      </View>
+
+      <View style={styles.card}>
+        <View style={styles.rowBetween}>
+          <Text style={styles.sectionTitle}>Order Items ({items.length})</Text>
+          <TouchableOpacity
+            onPress={() => setItems((prev) => [...prev, { name: '', sku: '', quantity: 1, price: 0, weight: 0.5 }])}
+          >
+            <Text style={styles.linkText}>+ Add Item</Text>
+          </TouchableOpacity>
+        </View>
+
+        {items.map((item, idx) => (
+          <View key={idx} style={styles.itemBox}>
+            <View style={styles.rowBetween}>
+              <Text style={styles.muted}>Item #{idx + 1}</Text>
+              {items.length > 1 ? (
+                <TouchableOpacity onPress={() => setItems((prev) => prev.filter((_, i) => i !== idx))}>
+                  <Text style={styles.removeText}>Remove</Text>
+                </TouchableOpacity>
+              ) : null}
+            </View>
+            <TextInput
+              style={styles.input}
+              placeholder="Item Name"
+              value={item.name}
+              onChangeText={(val) =>
+                setItems((prev) => prev.map((it, i) => (i === idx ? { ...it, name: val } : it)))
+              }
+            />
+            <View style={styles.twoCol}>
+              <TextInput
+                style={[styles.input, styles.flex1]}
+                placeholder="Qty"
+                keyboardType="numeric"
+                value={String(item.quantity)}
+                onChangeText={(val) =>
+                  setItems((prev) =>
+                    prev.map((it, i) => (i === idx ? { ...it, quantity: Math.max(1, Number(val) || 1) } : it))
+                  )
+                }
+              />
+              <TextInput
+                style={[styles.input, styles.flex1]}
+                placeholder="Unit Price (₹)"
+                keyboardType="decimal-pad"
+                value={item.price ? String(item.price) : ''}
+                onChangeText={(val) =>
+                  setItems((prev) =>
+                    prev.map((it, i) => (i === idx ? { ...it, price: Number(val) || 0 } : it))
+                  )
+                }
+              />
+              <TextInput
+                style={[styles.input, styles.flex1]}
+                placeholder="Wt (kg)"
+                keyboardType="decimal-pad"
+                value={String(item.weight)}
+                onChangeText={(val) =>
+                  setItems((prev) =>
+                    prev.map((it, i) => (i === idx ? { ...it, weight: Number(val) || 0.5 } : it))
+                  )
+                }
+              />
+            </View>
+          </View>
+        ))}
+
+        {paymentMethod === 'COD' ? (
+          <TextInput
+            style={styles.input}
+            placeholder={`COD Collect Amount (default ₹${totalAmount})`}
+            keyboardType="decimal-pad"
+            value={codAmount}
+            onChangeText={setCodAmount}
+          />
+        ) : null}
+      </View>
+
+      <TouchableOpacity
+        style={styles.primaryBtn}
+        disabled={createMutation.isPending}
+        onPress={() => {
+          setErrorMsg(null);
+          createMutation.mutate();
+        }}
+      >
+        {createMutation.isPending ? (
+          <ActivityIndicator color="#FFFFFF" />
+        ) : (
+          <Text style={styles.primaryBtnText}>
+            Create Order ({totalQty} items · ₹{totalAmount.toFixed(2)})
+          </Text>
+        )}
+      </TouchableOpacity>
+    </ScrollView>
   );
 }
 
-function ReviewRow({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={rv.row}>
-      <Text style={rv.lbl}>{label}</Text>
-      <Text style={rv.val}>{value}</Text>
-    </View>
-  );
-}
-const rv = StyleSheet.create({
-  row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: Colors.border },
-  lbl: { fontSize: 13, color: Colors.fg2, flex: 0.4 },
-  val: { fontSize: 13, color: Colors.fg, fontWeight: '500', flex: 0.6, textAlign: 'right' },
-});
-
-const s = StyleSheet.create({
-  safe:         { flex: 1, backgroundColor: Colors.bg },
-  header:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: Colors.border, backgroundColor: Colors.surface },
-  backBtn:      { fontSize: 16, color: Colors.accent, fontWeight: '600', width: 60 },
-  title:        { fontSize: 16, fontWeight: '700', color: Colors.fg },
-
-  progress:     { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 40, paddingTop: 20, paddingBottom: 6 },
-  stepCircle:   { width: 30, height: 30, borderRadius: 15, backgroundColor: Colors.surface2, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: Colors.border },
-  stepCircleActive: { backgroundColor: Colors.accent, borderColor: Colors.accent },
-  stepNum:      { fontSize: 13, fontWeight: '700', color: Colors.fg2 },
-  stepNumActive:{ color: '#fff' },
-  stepLine:     { flex: 1, height: 2, backgroundColor: Colors.border },
-  stepLineActive: { backgroundColor: Colors.accent },
-  stepLabel:    { textAlign: 'center', fontSize: 13, fontWeight: '600', color: Colors.fg2, marginBottom: 16 },
-
-  form:         { paddingHorizontal: 16, paddingTop: 10, paddingBottom: 20 },
-  row:          { flexDirection: 'row' },
-  dimLabel:     { fontSize: 12, fontWeight: '600', color: Colors.fg2, marginBottom: 10, marginTop: 4 },
-
-  payRow:       { flexDirection: 'row', gap: 10, marginBottom: 14 },
-  payChip:      { flex: 1, padding: 12, borderRadius: 12, alignItems: 'center', backgroundColor: Colors.surface, borderWidth: 1.5, borderColor: Colors.border },
-  payChipOn:    { borderColor: Colors.accent, backgroundColor: Colors.accentDim },
-  payChipTxt:   { fontSize: 13, fontWeight: '600', color: Colors.fg2 },
-  payChipTxtOn: { color: Colors.accent },
-
-  pickupRow:    { flexDirection: 'row', alignItems: 'center', padding: 14, backgroundColor: Colors.surface, borderRadius: 12, marginBottom: 8, borderWidth: 1.5, borderColor: Colors.border },
-  pickupRowOn:  { borderColor: Colors.accent, backgroundColor: Colors.accentDim },
-  pickupName:   { fontSize: 14, fontWeight: '600', color: Colors.fg, marginBottom: 2 },
-  pickupAddr:   { fontSize: 11, color: Colors.fg2 },
-  pickupCheck:  { width: 24, height: 24, borderRadius: 12, backgroundColor: Colors.accent, alignItems: 'center', justifyContent: 'center' },
-  pickupCheckTxt:{ fontSize: 13, color: '#fff', fontWeight: '700' },
-
-  reviewSection:{ backgroundColor: Colors.surface, borderRadius: 14, padding: 16, marginBottom: 14, borderWidth: 1, borderColor: Colors.border },
-  reviewHead:   { fontSize: 12, fontWeight: '700', color: Colors.fg2, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 10 },
-
-  footer:       { padding: 16, paddingBottom: 24, backgroundColor: Colors.surface, borderTopWidth: 1, borderTopColor: Colors.border },
-  btn:          { backgroundColor: Colors.accent, borderRadius: 14, padding: 16, alignItems: 'center' },
-  btnTxt:       { color: '#fff', fontSize: 15, fontWeight: '700' },
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#F5F6FA' },
+  content: { padding: 16, gap: 16, paddingBottom: 40 },
+  title: { fontSize: 22, fontWeight: '700', color: '#111827' },
+  sectionTitle: { fontSize: 16, fontWeight: '700', color: '#111827' },
+  card: { backgroundColor: '#FFFFFF', borderRadius: 16, borderWidth: 1, borderColor: '#E5E7EB', padding: 16, gap: 10 },
+  label: { fontSize: 12, fontWeight: '600', color: '#6B7280' },
+  muted: { fontSize: 12, color: '#6B7280' },
+  linkText: { fontSize: 12, fontWeight: '600', color: '#3B82F6' },
+  removeText: { fontSize: 12, fontWeight: '600', color: '#DC2626' },
+  errorText: { color: '#DC2626', fontSize: 13, fontWeight: '600' },
+  input: { height: 44, borderRadius: 10, borderWidth: 1, borderColor: '#E5E7EB', backgroundColor: '#F5F6FA', paddingHorizontal: 12, fontSize: 14, color: '#111827' },
+  segmentRow: { flexDirection: 'row', backgroundColor: '#F5F6FA', borderRadius: 10, padding: 4, borderWidth: 1, borderColor: '#E5E7EB' },
+  segmentBtn: { flex: 1, height: 38, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  segmentActive: { backgroundColor: '#3B82F6' },
+  segmentText: { fontSize: 13, fontWeight: '600', color: '#6B7280' },
+  segmentTextActive: { color: '#FFFFFF' },
+  rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  whScroll: { flexDirection: 'row', marginVertical: 4 },
+  whChip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: '#E5E7EB', marginRight: 8, backgroundColor: '#F5F6FA' },
+  whChipActive: { borderColor: '#3B82F6', backgroundColor: '#EFF6FF' },
+  whChipText: { fontSize: 12, fontWeight: '600', color: '#111827' },
+  whChipTextActive: { color: '#3B82F6' },
+  inlineBox: { padding: 12, borderRadius: 12, backgroundColor: '#F5F6FA', borderWidth: 1, borderColor: '#E5E7EB', gap: 8 },
+  itemBox: { padding: 12, borderRadius: 12, backgroundColor: '#F5F6FA', borderWidth: 1, borderColor: '#E5E7EB', gap: 8 },
+  twoCol: { flexDirection: 'row', gap: 8 },
+  flex1: { flex: 1 },
+  secondaryBtn: { height: 40, borderRadius: 10, backgroundColor: '#111827', alignItems: 'center', justifyContent: 'center' },
+  secondaryBtnText: { color: '#FFFFFF', fontSize: 12, fontWeight: '600' },
+  primaryBtn: { height: 48, borderRadius: 12, backgroundColor: '#3B82F6', alignItems: 'center', justifyContent: 'center' },
+  primaryBtnText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
 });

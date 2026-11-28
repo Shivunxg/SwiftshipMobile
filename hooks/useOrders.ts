@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth-store';
-import type { Order, Wallet, Pickup, Payout, WeightDiscrepancy, PayoutDetail } from '../lib/types';
+import type { Order, Wallet, Pickup, Payout, WeightDiscrepancy, PayoutDetail, CodReconciliationItem, MerchantCourier, MerchantProfile, WarehouseLocation } from '../lib/types';
 import { mapOrder, mapPayout, mapPayoutDetail, mapWeightDiscrepancy, mapWallet, mapPickup, isNDR, isRTO, isCOD } from '../lib/mappers';
 
 const toArray = (d: unknown): any[] => Array.isArray(d) ? d : (d as any)?.content ?? (d as any)?.data ?? [];
@@ -177,4 +177,117 @@ export const useBulkLabel = () =>
   useMutation({
     mutationFn: (orderIds: string[]) =>
       api.post('/api/orders/bulk-label', { orderIds }).then(r => r.data),
+  });
+
+export const useCodReconciliation = () => {
+  const { tenantId } = useAuth();
+  return useQuery<CodReconciliationItem[]>({
+    queryKey: ['cod-reconciliation', tenantId],
+    queryFn: () => api.get('/api/payouts/cod-reconciliation').then(r => {
+      const list = Array.isArray(r.data) ? r.data : r.data?.content ?? r.data?.data ?? [];
+      return list as CodReconciliationItem[];
+    }),
+    enabled: !!tenantId,
+  });
+};
+
+export const useMerchantCouriers = () => {
+  const { tenantId } = useAuth();
+  return useQuery<MerchantCourier[]>({
+    queryKey: ['merchant-couriers', tenantId],
+    queryFn: () => api.get('/api/couriers/merchant').then(r => {
+      const list = Array.isArray(r.data) ? r.data : r.data?.content ?? r.data?.data ?? [];
+      return list as MerchantCourier[];
+    }),
+    enabled: !!tenantId,
+  });
+};
+
+export const useMerchantProfile = () => {
+  const { userId } = useAuth();
+  return useQuery<MerchantProfile>({
+    queryKey: ['merchant-profile', userId],
+    queryFn: () => api.get('/api/merchants/profile').then(r => r.data as MerchantProfile),
+    enabled: !!userId,
+  });
+};
+
+export const usePickupLocations = () => {
+  const { tenantId, role } = useAuth();
+  const isMerchant = !role || role.toUpperCase().includes('MERCHANT');
+  return useQuery<WarehouseLocation[]>({
+    queryKey: ['pickup-locations', tenantId],
+    queryFn: async () => {
+      const path = isMerchant && tenantId
+        ? `/api/pickups/locations/merchant/${tenantId}`
+        : '/api/pickups/locations';
+      const res = await api.get(path);
+      const list = Array.isArray(res.data) ? res.data : res.data?.data ?? res.data?.content ?? [];
+      return list as WarehouseLocation[];
+    },
+    enabled: !!tenantId,
+  });
+};
+
+export const useToggleCourierMutation = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ courierId, enabled }: { courierId: string; enabled: boolean }) =>
+      api.put(`/api/couriers/${courierId}/toggle`, { enabled }).then(r => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['merchant-couriers'] }),
+  });
+};
+
+export const useConfirmCashMutation = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payoutId: string) =>
+      api.post(`/api/payouts/${payoutId}/confirm-cash`).then(r => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['payouts'] });
+      qc.invalidateQueries({ queryKey: ['cod-reconciliation'] });
+    },
+  });
+};
+
+export const useWalletTopupMutation = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { amount: number; paymentMethod?: string }) =>
+      api.post('/api/wallet/topup', body).then(r => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['wallet'] }),
+  });
+};
+
+export const useResolveDiscrepancyMutation = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ discrepancyId, action, remarks }: { discrepancyId: number; action: 'ACCEPTED' | 'DISPUTED'; remarks?: string }) =>
+      api.put(`/api/weight-discrepancies/${discrepancyId}/resolve`, { action, remarks: remarks ?? '' }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['weight-discrepancies'] }),
+  });
+};
+
+export const useLoginMutation = () =>
+  useMutation({
+    mutationFn: (body: { username: string; password: string }) =>
+      api.post('/api/auth/login', body).then(r => r.data),
+  });
+
+export const useSendOtpMutation = () =>
+  useMutation({
+    mutationFn: (mobile: string) =>
+      api.post('/api/auth/otp/send', { mobile }).then(r => r.data),
+  });
+
+export const useVerifyOtpMutation = () =>
+  useMutation({
+    mutationFn: (body: { mobile: string; otp: string }) =>
+      api.post('/api/auth/otp/verify', body).then(r => r.data),
+  });
+
+export const useGoogleLoginMutation = () =>
+  useMutation({
+    mutationFn: (idToken: string) =>
+      api.post('/api/auth/google', { idToken }).then(r => r.data),
   });
