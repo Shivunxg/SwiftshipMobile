@@ -61,6 +61,7 @@
       "startUrl": "/"
     },
     "plugins": [
+      "./plugins/withAndroidForceCompileSdk",
       "expo-router",
       "expo-secure-store",
       [
