@@ -1,7 +1,8 @@
 const { withProjectBuildGradle } = require('@expo/config-plugins');
 
 // Forces all Android subprojects (react-native-screens etc.) to use compileSdk 37.
-// expo-build-properties only sets it for :app; third-party libs hardcode their own value.
+// Uses pluginManager.withPlugin() — the Gradle 9 compatible hook; afterEvaluate is
+// forbidden once the root project is in configured state.
 module.exports = function withAndroidForceCompileSdk(config) {
   return withProjectBuildGradle(config, (config) => {
     if (config.modResults.language === 'groovy') {
@@ -10,12 +11,14 @@ module.exports = function withAndroidForceCompileSdk(config) {
         config.modResults.contents += `
 ${marker}
 subprojects {
-    afterEvaluate { project ->
-        if (project.plugins.hasPlugin('com.android.library') ||
-            project.plugins.hasPlugin('com.android.application')) {
-            project.android {
-                compileSdk 37
-            }
+    pluginManager.withPlugin("com.android.library") {
+        android {
+            compileSdk 37
+        }
+    }
+    pluginManager.withPlugin("com.android.application") {
+        android {
+            compileSdk 37
         }
     }
 }
