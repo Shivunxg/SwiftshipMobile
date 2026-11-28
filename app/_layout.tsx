@@ -43,7 +43,7 @@ export default function RootLayout() {
             <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#F5F6FA' } }}>
               <Stack.Screen name="(auth)" />
               <Stack.Screen name="(tabs)" />
-              <Stack.Screen name="__debug" options={{ presentation: 'modal' }} />
+              {__DEV__ && <Stack.Screen name="__debug" options={{ presentation: 'modal' }} />}
               <Stack.Screen name="order/[id]" options={{ presentation: 'card' }} />
               <Stack.Screen name="account" />
               <Stack.Screen name="create-shipment" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
@@ -57,6 +57,8 @@ export default function RootLayout() {
               <Stack.Screen name="invoice/[id]" options={{ presentation: 'card' }} />
               <Stack.Screen name="clubbed-print" options={{ presentation: 'card' }} />
               <Stack.Screen name="bulk-assign" options={{ presentation: 'card' }} />
+              <Stack.Screen name="tracking" options={{ presentation: 'card' }} />
+              <Stack.Screen name="warehouses" options={{ presentation: 'card' }} />
             </Stack>
           </AuthGuard>
         </ErrorBoundary>
