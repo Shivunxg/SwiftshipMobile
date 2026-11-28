@@ -5,20 +5,20 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/>
 <meta name="mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <meta name="apple-mobile-web-app-title" content="SwiftShip"/>
-<meta name="theme-color" content="#0A0F1E"/>
+<meta name="theme-color" content="#FFFFFF"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
 <title>SwiftShip</title>
 <link rel="manifest" href="manifest.json"/>
-<link rel="apple-touch-icon" href="icon-192.png"/>
+<link rel="apple-touch-icon" href="icon.svg"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
-  --bg:#0A0F1E;--surface:#111827;--surface2:#1a2235;--border:#1f2d45;
-  --fg:#f1f5f9;--fg2:#94a3b8;--fg3:#475569;
-  --accent:#3B82F6;--success:#22C55E;--error:#EF4444;--warning:#F59E0B;--purple:#A855F7;
-  --accent-dim:rgba(59,130,246,0.12);--success-dim:rgba(34,197,94,0.12);
-  --error-dim:rgba(239,68,68,0.12);--warning-dim:rgba(245,158,11,0.12);
+  --bg:#F8FAFC;--surface:#FFFFFF;--surface2:#F1F5F9;--border:#E2E8F0;
+  --fg:#0F172A;--fg2:#64748B;--fg3:#94A3B8;
+  --accent:#3B82F6;--success:#16A34A;--error:#DC2626;--warning:#D97706;--purple:#9333EA;
+  --accent-dim:rgba(59,130,246,0.1);--success-dim:rgba(22,163,74,0.1);
+  --error-dim:rgba(220,38,38,0.1);--warning-dim:rgba(217,119,6,0.1);
 }
 html,body{height:100%;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;overflow:hidden}
 #root{height:100%;display:flex;flex-direction:column}
@@ -34,7 +34,7 @@ html,body{height:100%;background:var(--bg);color:var(--fg);font-family:-apple-sy
 .login-title{font-size:26px;font-weight:800;color:var(--fg);letter-spacing:-0.5px}
 .login-sub{font-size:13px;color:var(--fg2);margin-top:3px;text-align:center}
 
-.login-card{width:100%;max-width:380px;background:var(--surface);border:1px solid var(--border);border-radius:24px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,0.5)}
+.login-card{width:100%;max-width:380px;background:var(--surface);border:1px solid var(--border);border-radius:24px;padding:24px;box-shadow:0 4px 24px rgba(0,0,0,0.08)}
 
 /* Login tabs */
 .login-tabs{display:flex;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:3px;margin-bottom:20px;gap:3px}
@@ -47,7 +47,7 @@ html,body{height:100%;background:var(--bg);color:var(--fg);font-family:-apple-sy
 .field-wrap{position:relative;display:flex;align-items:center}
 .field-icon{position:absolute;left:13px;color:var(--fg3);font-size:15px;pointer-events:none}
 .field-input{width:100%;height:48px;background:var(--bg);border:1.5px solid var(--border);border-radius:12px;padding:0 42px;color:var(--fg);font-size:15px;outline:none;transition:border-color 0.2s}
-.field-input:focus{border-color:var(--accent);background:#0d1626}
+.field-input:focus{border-color:var(--accent);background:#EFF6FF}
 .field-input.no-left-icon{padding-left:14px}
 .field-toggle{position:absolute;right:13px;background:none;border:none;color:var(--fg3);cursor:pointer;font-size:16px;padding:4px}
 
@@ -147,15 +147,22 @@ html,body{height:100%;background:var(--bg);color:var(--fg);font-family:-apple-sy
 .row-sub{font-size:11px;color:var(--fg2);margin-top:1px}
 .row-chev{font-size:20px;color:var(--fg3);margin-left:auto}
 
-/* ── OP TILES ── */
-.op-list{display:flex;flex-direction:column;gap:7px;padding:4px 16px 16px}
-.op-row{display:flex;align-items:center;gap:14px;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px;cursor:pointer;transition:all 0.15s}
-.op-row:active{opacity:0.7;transform:scale(0.98)}
-.op-icon{width:42px;height:42px;border-radius:12px;background:var(--bg);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:19px}
-.op-text{flex:1;min-width:0}
-.op-title{font-size:14px;font-weight:700;color:var(--fg)}
-.op-sub{font-size:11px;color:var(--fg2);margin-top:2px}
-.op-chev{color:var(--fg3);font-size:18px;flex-shrink:0}
+/* ── OP GRID ── */
+.op-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:4px 16px 16px}
+.op-card{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:16px;cursor:pointer;transition:all 0.15s;display:flex;flex-direction:column;min-height:130px}
+.op-card:active{transform:scale(0.95);box-shadow:0 2px 12px rgba(0,0,0,0.08)}
+.op-card-icon{width:46px;height:46px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:12px}
+.op-card-title{font-size:13px;font-weight:700;color:var(--fg);line-height:1.3;margin-bottom:3px}
+.op-card-sub{font-size:11px;color:var(--fg2);line-height:1.4;flex:1}
+.op-card-arr{font-size:13px;color:var(--fg3);margin-top:10px}
+/* bottom sheet */
+.op-sheet-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:100;align-items:flex-end}
+.op-sheet-bg.open{display:flex}
+.op-sheet{background:var(--surface);border-radius:24px 24px 0 0;padding:24px;width:100%;animation:slideUp 0.25s ease}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.op-sheet-title{font-size:18px;font-weight:800;color:var(--fg);margin-bottom:6px}
+.op-sheet-sub{font-size:13px;color:var(--fg2);margin-bottom:20px;line-height:1.5}
+.op-sheet-close{margin-top:4px;width:100%;padding:14px;background:var(--surface2);border:none;border-radius:14px;font-size:14px;font-weight:600;color:var(--fg2);cursor:pointer}
 
 /* ── WALLET TAB ── */
 .add-money-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:calc(100% - 32px);margin:0 16px 10px;background:#16A34A;border:none;border-radius:14px;padding:15px;color:#fff;font-size:15px;font-weight:700;cursor:pointer}
@@ -167,7 +174,7 @@ html,body{height:100%;background:var(--bg);color:var(--fg);font-family:-apple-sy
 .tx-amt{font-size:14px;font-weight:700;margin-left:auto;flex-shrink:0}
 
 /* ── MISC ── */
-.logout-btn{display:flex;align-items:center;justify-content:center;gap:8px;margin:0 16px 10px;padding:15px;background:#1a0505;border:1px solid #3b1515;border-radius:16px;cursor:pointer;color:var(--error);font-size:15px;font-weight:700}
+.logout-btn{display:flex;align-items:center;justify-content:center;gap:8px;margin:0 16px 10px;padding:15px;background:#FEF2F2;border:1px solid #FECACA;border-radius:16px;cursor:pointer;color:var(--error);font-size:15px;font-weight:700}
 .spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite;margin:40px auto}
 @keyframes spin{to{transform:rotate(360deg)}}
 .loading-txt{text-align:center;color:var(--fg2);font-size:13px;margin-top:8px}
@@ -318,16 +325,25 @@ html,body{height:100%;background:var(--bg);color:var(--fg);font-family:-apple-sy
         <div style="font-size:24px;font-weight:800;color:var(--fg);letter-spacing:-0.4px">Operations</div>
         <div style="font-size:12px;color:var(--fg2);margin-top:3px">Dispatch, labels, settlements &amp; courier controls</div>
       </div>
-      <div class="op-list">
-        <div class="op-row"><div class="op-icon">📦</div><div class="op-text"><div class="op-title">Create Shipment</div><div class="op-sub">Book a new COD or Prepaid shipment</div></div><span class="op-chev">›</span></div>
-        <div class="op-row"><div class="op-icon">📍</div><div class="op-text"><div class="op-title">Track Shipments</div><div class="op-sub">Live tracking &amp; scan history</div></div><span class="op-chev">›</span></div>
-        <div class="op-row"><div class="op-icon">🚚</div><div class="op-text"><div class="op-title">Courier Assignment</div><div class="op-sub">Compare courier rates &amp; ship</div></div><span class="op-chev">›</span></div>
-        <div class="op-row"><div class="op-icon">🏷️</div><div class="op-text"><div class="op-title">Label &amp; Schedule Pickup</div><div class="op-sub">Download label and request pickup</div></div><span class="op-chev">›</span></div>
-        <div class="op-row"><div class="op-icon">💰</div><div class="op-text"><div class="op-title">Pending Payouts</div><div class="op-sub">View and release COD remittance payouts</div></div><span class="op-chev">›</span></div>
-        <div class="op-row"><div class="op-icon">📅</div><div class="op-text"><div class="op-title">7-Day Settlement Cycles</div><div class="op-sub">COD remittance schedule grouped by cycle</div></div><span class="op-chev">›</span></div>
-        <div class="op-row"><div class="op-icon">⚖️</div><div class="op-text"><div class="op-title">Weight Discrepancies</div><div class="op-sub">Accept or dispute courier weight charges</div></div><span class="op-chev">›</span></div>
-        <div class="op-row"><div class="op-icon">⚙️</div><div class="op-text"><div class="op-title">Manage Couriers</div><div class="op-sub">Enable or pause active courier partners</div></div><span class="op-chev">›</span></div>
-        <div class="op-row"><div class="op-icon">🏪</div><div class="op-text"><div class="op-title">Warehouse Locations</div><div class="op-sub">Add and manage pickup addresses</div></div><span class="op-chev">›</span></div>
+      <div class="op-grid">
+        <div class="op-card" onclick="showOpSheet('Create Shipment','Book a new COD or Prepaid shipment and get it picked up.')"><div class="op-card-icon" style="background:#EFF6FF">📦</div><div class="op-card-title">Create Shipment</div><div class="op-card-sub">Book COD or Prepaid</div><div class="op-card-arr">→</div></div>
+        <div class="op-card" onclick="showOpSheet('Track Shipments','View live tracking status and full scan history for your shipments.')"><div class="op-card-icon" style="background:#F5F3FF">📍</div><div class="op-card-title">Track Shipments</div><div class="op-card-sub">Live status &amp; scan logs</div><div class="op-card-arr">→</div></div>
+        <div class="op-card" onclick="showOpSheet('Courier Assignment','Compare courier rates and assign the best partner for your shipment.')"><div class="op-card-icon" style="background:#FFF7ED">🚚</div><div class="op-card-title">Courier Assignment</div><div class="op-card-sub">Compare &amp; assign rates</div><div class="op-card-arr">→</div></div>
+        <div class="op-card" onclick="showOpSheet('Label &amp; Pickup','Download shipping labels and schedule a courier pickup from your warehouse.')"><div class="op-card-icon" style="background:#F0FDF4">🏷️</div><div class="op-card-title">Label &amp; Pickup</div><div class="op-card-sub">Download &amp; schedule</div><div class="op-card-arr">→</div></div>
+        <div class="op-card" onclick="showOpSheet('Pending Payouts','View and release pending COD remittance payouts to your bank account.')"><div class="op-card-icon" style="background:#FFFBEB">💰</div><div class="op-card-title">Pending Payouts</div><div class="op-card-sub">Release COD remittance</div><div class="op-card-arr">→</div></div>
+        <div class="op-card" onclick="showOpSheet('7-Day Settlement','View COD remittance schedules grouped by 7-day settlement cycles.')"><div class="op-card-icon" style="background:#F0FDFA">📅</div><div class="op-card-title">7-Day Settlement</div><div class="op-card-sub">Settlement cycles view</div><div class="op-card-arr">→</div></div>
+        <div class="op-card" onclick="showOpSheet('Weight Disputes','Review and accept or dispute courier weight discrepancy charges.')"><div class="op-card-icon" style="background:#FEF2F2">⚖️</div><div class="op-card-title">Weight Disputes</div><div class="op-card-sub">Accept or dispute charges</div><div class="op-card-arr">→</div></div>
+        <div class="op-card" onclick="showOpSheet('Manage Couriers','Enable or pause active courier partners for your merchant account.')"><div class="op-card-icon" style="background:#EEF2FF">⚙️</div><div class="op-card-title">Manage Couriers</div><div class="op-card-sub">Enable or pause partners</div><div class="op-card-arr">→</div></div>
+        <div class="op-card" onclick="showOpSheet('Warehouse Locations','Add and manage pickup addresses and warehouse locations.')"><div class="op-card-icon" style="background:#FDF2F8">🏪</div><div class="op-card-title">Warehouse Locations</div><div class="op-card-sub">Manage pickup addresses</div><div class="op-card-arr">→</div></div>
+      </div>
+      <!-- Op bottom sheet -->
+      <div class="op-sheet-bg" id="op-sheet-bg" onclick="closeOpSheet(event)">
+        <div class="op-sheet">
+          <div class="op-sheet-title" id="op-sheet-title"></div>
+          <div class="op-sheet-sub" id="op-sheet-sub"></div>
+          <a id="op-sheet-link" href="https://app.swiftship.sendit.co.in" target="_blank" style="display:block;text-align:center;padding:14px;background:var(--accent);color:#fff;border-radius:14px;font-size:15px;font-weight:700;text-decoration:none;margin-bottom:10px">Open in Web App →</a>
+          <button class="op-sheet-close" onclick="document.getElementById('op-sheet-bg').classList.remove('open')">Close</button>
+        </div>
       </div>
     </div>
 
@@ -451,6 +467,14 @@ async function apiFetch(path,opts={}){
   if(res.status===401){doLogout();throw new Error('Unauthorized')}
   return res.json();
 }
+
+// ── OP SHEET ──
+function showOpSheet(title,desc){
+  document.getElementById('op-sheet-title').textContent=title;
+  document.getElementById('op-sheet-sub').textContent=desc;
+  document.getElementById('op-sheet-bg').classList.add('open');
+}
+function closeOpSheet(e){if(e.target===document.getElementById('op-sheet-bg'))document.getElementById('op-sheet-bg').classList.remove('open')}
 
 // ── LOGIN TABS ──
 function switchLoginTab(t){
