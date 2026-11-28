@@ -57,6 +57,8 @@ export default function RootLayout() {
               <Stack.Screen name="invoice/[id]" options={{ presentation: 'card' }} />
               <Stack.Screen name="clubbed-print" options={{ presentation: 'card' }} />
               <Stack.Screen name="bulk-assign" options={{ presentation: 'card' }} />
+              <Stack.Screen name="tracking" options={{ presentation: 'card' }} />
+              <Stack.Screen name="warehouses" options={{ presentation: 'card' }} />
             </Stack>
           </AuthGuard>
         </ErrorBoundary>

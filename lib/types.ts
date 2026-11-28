@@ -143,6 +143,47 @@ export interface WeightDiscrepancy {
   adminRemarks: string | null;
 }
 
+export interface WarehouseLocation {
+  id: string;
+  name: string;
+  contactName: string;
+  phone: string;
+  email?: string;
+  address: string;
+  city: string;
+  state: string;
+  pincode: string;
+  isDefault: boolean;
+  verificationStatus?: string;
+  source?: 'server' | 'local';
+}
+
+export interface BankDetails {
+  accountNumber?: string;
+  bankName?: string;
+  ifscCode?: string;
+  accountHolderName?: string;
+}
+
+export interface MerchantCourier {
+  id: string;
+  name: string;
+  code: string;
+  serviceMode: string;
+  enabled: boolean;
+}
+
+export interface MerchantProfile {
+  companyName?: string;
+  gstNumber?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
+  phone?: string;
+  email?: string;
+}
+
 export interface PayoutDetail {
   id: number;
   orderId: string;
