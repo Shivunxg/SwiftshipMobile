@@ -353,7 +353,7 @@ async function doLogin(){
   if(!user||!pass)return;
   btn.disabled=true;btn.textContent='Logging in…';err.style.display='none';
   try{
-    const data=await apiFetch('/api/auth/login',{method:'POST',body:JSON.stringify({username:user,password:pass})});
+    const data=await apiFetch('/api/auth/login',{method:'POST',body:JSON.stringify({email:user,username:user,password:pass})});
     if(!data.token)throw new Error('Invalid credentials');
     token=data.token;
     session=data;
