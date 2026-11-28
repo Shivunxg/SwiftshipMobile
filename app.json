@@ -69,7 +69,7 @@
           "android": {
             "enableNewArchitecture": false,
             "kotlinVersion": "1.9.25",
-            "compileSdkVersion": 35,
+            "compileSdkVersion": 36,
             "targetSdkVersion": 35,
             "minSdkVersion": 24,
             "extraPropertiesForGradleProperties": {
